@@ -1,1 +1,1 @@
-# fiji-plugin-em-tomogram-matching
+# fiji-plugin-yaml-metadata
