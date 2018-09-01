@@ -2,36 +2,20 @@ import de.embl.cba.em.matching.Algorithms;
 import de.embl.cba.em.matching.Projection;
 import de.embl.cba.em.matching.Transforms;
 import ij.*;
-import ij.measure.Calibration;
-import ij.process.*;
-import ij.gui.*;
 
-import java.awt.*;
-
-import ij.plugin.*;
-import ij.plugin.filter.MaximumFinder;
-import ij.measure.ResultsTable;
 import net.imagej.ImageJ;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
-import scala.Array;
 
-import java.awt.image.BufferedImage;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
-
-public class TemplateMatchingTest < T extends RealType< T > & NativeType< T > >
+public class TemplateMatching< T extends RealType< T > & NativeType< T > >
 {
 
 	public static final int Z_DIMENSION = 2;
@@ -113,8 +97,8 @@ public class TemplateMatchingTest < T extends RealType< T > & NativeType< T > >
 
 	public static void main( String... args )
 	{
-		final TemplateMatchingTest templateMatchingTest = new TemplateMatchingTest();
-		templateMatchingTest.run();
+		final TemplateMatching templateMatching = new TemplateMatching();
+		templateMatching.run();
 
 	}
 }
