@@ -69,8 +69,8 @@
       <file leaf-file-name="TemplateMatching.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/test/java/TemplateMatching.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="152">
-              <caret line="31" column="0" lean-forward="false" selection-start-line="31" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
+            <state relative-caret-position="204">
+              <caret line="17" column="75" lean-forward="true" selection-start-line="17" selection-start-column="30" selection-end-line="17" selection-end-column="75" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -88,11 +88,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="BdvExport.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="BdvExport.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/test/java/BdvExport.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="116">
-              <caret line="11" column="0" lean-forward="true" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+            <state relative-caret-position="217">
+              <caret line="21" column="0" lean-forward="true" selection-start-line="18" selection-start-column="8" selection-end-line="21" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -100,11 +100,23 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pom.xml" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/pom.xml">
+      <file leaf-file-name="BdvShow.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/test/java/BdvShow.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2204">
-              <caret line="116" column="21" lean-forward="false" selection-start-line="116" selection-start-column="21" selection-end-line="116" selection-end-column="21" />
+            <state relative-caret-position="323">
+              <caret line="37" column="36" lean-forward="true" selection-start-line="37" selection-start-column="36" selection-end-line="37" selection-end-column="36" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Views.java" pinned="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/net/imglib2/imglib2/5.3.0/imglib2-5.3.0-sources.jar!/net/imglib2/view/Views.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="187">
+              <caret line="1434" column="42" lean-forward="false" selection-start-line="1434" selection-start-column="42" selection-end-line="1434" selection-end-column="42" />
               <folding />
             </state>
           </provider>
@@ -143,6 +155,8 @@
         <option value="$PROJECT_DIR$/src/test/java/TemplateMatchingTest.java" />
         <option value="$PROJECT_DIR$/src/main/java/de/embl/cba/em/matching/ExportBdvHdf5.java" />
         <option value="$PROJECT_DIR$/src/test/java/BdvExport.java" />
+        <option value="$PROJECT_DIR$/src/test/java/TemplateMatching.java" />
+        <option value="$PROJECT_DIR$/src/test/java/BdvShow.java" />
       </list>
     </option>
   </component>
@@ -245,7 +259,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Application.BdvExport">
+  <component name="RunManager" selected="Application.BdvShow">
     <configuration default="true" type="Applet" factoryName="Applet">
       <option name="HTML_USED" value="false" />
       <option name="WIDTH" value="400" />
@@ -255,6 +269,19 @@
     </configuration>
     <configuration name="BdvExport" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="BdvExport" />
+      <option name="VM_PARAMETERS" />
+      <option name="PROGRAM_PARAMETERS" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
+      <option name="ALTERNATIVE_JRE_PATH" />
+      <option name="ENABLE_SWING_INSPECTOR" value="false" />
+      <option name="ENV_VARIABLES" />
+      <option name="PASS_PARENT_ENVS" value="true" />
+      <module name="fiji-plugin-em-tomogram-matching" />
+      <envs />
+    </configuration>
+    <configuration name="BdvShow" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="BdvShow" />
       <option name="VM_PARAMETERS" />
       <option name="PROGRAM_PARAMETERS" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -314,14 +341,16 @@
     <configuration name="&lt;template&gt;" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType" default="true" selected="false">
       <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -XX:MaxPermSize=250m -ea" />
     </configuration>
-    <list size="2">
+    <list size="3">
       <item index="0" class="java.lang.String" itemvalue="Application.TemplateMatchingTest" />
       <item index="1" class="java.lang.String" itemvalue="Application.BdvExport" />
+      <item index="2" class="java.lang.String" itemvalue="Application.BdvShow" />
     </list>
     <recent_temporary>
-      <list size="2">
-        <item index="0" class="java.lang.String" itemvalue="Application.BdvExport" />
-        <item index="1" class="java.lang.String" itemvalue="Application.TemplateMatchingTest" />
+      <list size="3">
+        <item index="0" class="java.lang.String" itemvalue="Application.BdvShow" />
+        <item index="1" class="java.lang.String" itemvalue="Application.BdvExport" />
+        <item index="2" class="java.lang.String" itemvalue="Application.TemplateMatchingTest" />
       </list>
     </recent_temporary>
   </component>
@@ -518,16 +547,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/java/TemplateMatching.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="152">
-          <caret line="31" column="0" lean-forward="false" selection-start-line="31" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/de/embl/cba/em/matching/ExportBdvHdf5.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="209">
@@ -536,10 +555,38 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/java/TemplateMatching.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="17" column="75" lean-forward="true" selection-start-line="17" selection-start-column="30" selection-end-line="17" selection-end-column="75" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/java/BdvExport.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="116">
-          <caret line="11" column="0" lean-forward="true" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+        <state relative-caret-position="217">
+          <caret line="21" column="0" lean-forward="true" selection-start-line="18" selection-start-column="8" selection-end-line="21" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/net/imglib2/imglib2/5.3.0/imglib2-5.3.0-sources.jar!/net/imglib2/view/Views.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="187">
+          <caret line="1434" column="42" lean-forward="false" selection-start-line="1434" selection-start-column="42" selection-end-line="1434" selection-end-column="42" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/java/BdvShow.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="37" column="36" lean-forward="true" selection-start-line="37" selection-start-column="36" selection-end-line="37" selection-end-column="36" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>

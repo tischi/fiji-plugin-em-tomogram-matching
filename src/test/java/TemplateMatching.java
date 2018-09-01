@@ -15,7 +15,7 @@ import net.imglib2.view.Views;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class TemplateMatching< T extends RealType< T > & NativeType< T > >
+public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 {
 
 	public static final int Z_DIMENSION = 2;
