@@ -1,0 +1,1 @@
+{"class":"de.embl.cba.em.matching.MatchedTomogramReviewCommand","values":{"menuPath":"Plugins>Registration>EMBL>Review matched tomograms","type":"org.scijava.command.Command"}}{"class":"de.embl.cba.em.matching.TomogramMatchingCommand","values":{"menuPath":"Plugins>Registration>EMBL>Compute tomogram matching","type":"org.scijava.command.Command"}}

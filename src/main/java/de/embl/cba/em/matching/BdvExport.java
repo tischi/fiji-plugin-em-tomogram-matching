@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExportBdvHdf5
+public class BdvExport
 {
 
 	public static void export( ImagePlus imp,

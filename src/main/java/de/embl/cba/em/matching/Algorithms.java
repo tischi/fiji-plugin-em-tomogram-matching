@@ -27,15 +27,7 @@ public class Algorithms
 	{
 		assert scalingFactors.length == input.numDimensions();
 
-		/*
-		 * Blur image
-		 */
-
 		RandomAccessibleInterval< T > blurred = createOptimallyBlurredArrayImg( input, scalingFactors );
-
-		/*
-		 * Sample values from blurred image
-		 */
 
 		final RandomAccessibleInterval< T > downscaled = createSubsampledArrayImg( blurred, scalingFactors );
 

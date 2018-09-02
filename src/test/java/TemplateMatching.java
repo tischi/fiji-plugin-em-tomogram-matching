@@ -76,7 +76,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 //			template.setRoi(915,916,218,214);
 //			IJ.run( template, "Crop", "");
 //
-//			template.show();
+//			template.showIntermediateResult();
 //
 //			FloatProcessor rFp = doMatch( overview, template, 5, true );
 //
@@ -84,7 +84,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		}
 
-//		overview.show();
+//		overview.showIntermediateResult();
 //
 //		Overlay overlay = new Overlay(  );
 //		for ( int[] offset : offsets )

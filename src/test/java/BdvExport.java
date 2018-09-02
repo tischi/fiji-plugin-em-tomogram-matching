@@ -1,6 +1,5 @@
 import bdv.util.BdvFunctions;
 import bdv.util.BdvStackSource;
-import de.embl.cba.em.matching.ExportBdvHdf5;
 import ij.IJ;
 import ij.ImagePlus;
 import mpicbg.spim.data.SpimData;
@@ -20,7 +19,7 @@ public class BdvExport
 		String outputFilename = "g22_t27-downScaled";
 		String outputPath = outputDirectory + File.pathSeparator + outputFilename;
 
-		ExportBdvHdf5.export( imp,
+		de.embl.cba.em.matching.BdvExport.export( imp,
 				outputDirectory + File.pathSeparator + outputFilename,
 				new double[]{1,1,1},
 				"micrometer",
