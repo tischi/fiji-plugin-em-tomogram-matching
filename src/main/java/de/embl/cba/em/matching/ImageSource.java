@@ -7,8 +7,11 @@ import mpicbg.spim.data.sequence.ViewSetup;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.realtransform.AffineTransform3D;
 
 import java.io.File;
+
+import static de.embl.cba.em.matching.Transforms.createBoundingIntervalAfterTransformation;
 
 public class ImageSource
 {
@@ -35,14 +38,12 @@ public class ImageSource
 
 	public FinalInterval getInterval()
 	{
-		spimData.getViewRegistrations().getViewRegistration( 0,0 ).getModel();
-		final ViewSetup viewSetup = spimData.getSequenceDescription().getViewSetupsOrdered().get( 0 );
-		final Dimensions size = viewSetup.getSize();
-		final double[] location = viewSetup.getTile().getLocation();
-
+		final AffineTransform3D affineTransform3D = spimData.getViewRegistrations().getViewRegistration( 0, 0 ).getModel();
 		RandomAccessibleInterval< ? > image = spimData.getSequenceDescription().getImgLoader().getSetupImgLoader( 0 ).getImage( 0 );
 
-		return null;
+		final FinalInterval boundingIntervalAfterTransformation = createBoundingIntervalAfterTransformation( image, affineTransform3D );
+
+		return boundingIntervalAfterTransformation;
 	}
 
 

@@ -1,14 +1,10 @@
 package de.embl.cba.em.matching;
 
 import bdv.util.*;
-import bdv.util.volatiles.VolatileViews;
-import de.embl.cba.em.matching.ImageSource;
 import net.imglib2.FinalInterval;
-import net.imglib2.cache.img.CachedCellImg;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -33,9 +29,8 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	public void showUI()
 	{
 		addImageSourceSelectionPanel( this );
-		createAndShowUI( );
+		createAndShowUI();
 	}
-
 
 	private JPanel horizontalLayoutPanel()
 	{
@@ -58,6 +53,8 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		horizontalLayoutPanel.add( imageSourcesComboBox );
 
+		imageSourcesComboBox.addActionListener( this );
+
 		panel.add( horizontalLayoutPanel );
 	}
 
@@ -67,28 +64,13 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		for( ImageSource source : imageSources )
 		{
-			imageSourcesComboBox.addItem( source.getName() );
+			if ( ! source.getName().contains( Utils.OVERVIEW_NAME ) )
+			{
+				imageSourcesComboBox.addItem( source.getName() );
+			}
 		}
 
 		imageSourcesComboBox.updateUI();
-	}
-
-	public void updateBdv( long msecs )
-	{
-		(new Thread(new Runnable(){
-			public void run(){
-				try
-				{
-					Thread.sleep( msecs );
-				}
-				catch ( InterruptedException e )
-				{
-					e.printStackTrace();
-				}
-
-				bdv.getBdvHandle().getViewerPanel().requestRepaint();
-			}
-		})).start();
 	}
 
 	@Override
@@ -97,7 +79,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		if ( e.getSource() == imageSourcesComboBox )
 		{
 			zoomToSource( ( String ) imageSourcesComboBox.getSelectedItem() );
-			updateBdv( 100 );
+			Utils.updateBdv( bdv,1000 );
 		}
 
 	}
@@ -108,29 +90,27 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		{
 			if ( imageSource.getName().equals( sourceName ) )
 			{
-				imageSource.getInterval();
-
+				zoomToInterval( imageSource.getInterval(), 0.75 );
 			}
 		}
 	}
 
-	public void zoomToInterval( FinalInterval interval )
+	public void zoomToInterval( FinalInterval interval, double zoomFactor )
 	{
-		final AffineTransform3D affineTransform3D = getImageZoomTransform( interval );
+		final AffineTransform3D affineTransform3D = getImageZoomTransform( interval, zoomFactor );
 
 		bdv.getBdvHandle().getViewerPanel().setCurrentViewerTransform( affineTransform3D );
-
 	}
 
 
-	public AffineTransform3D getImageZoomTransform( FinalInterval interval )
+	public AffineTransform3D getImageZoomTransform( FinalInterval interval, double zoomFactor )
 	{
 
 		final AffineTransform3D affineTransform3D = new AffineTransform3D();
 
 		double[] shiftToImage = new double[ 3 ];
 
-		for( int d = 0; d < 2; ++d )
+		for( int d = 0; d < 3; ++d )
 		{
 			shiftToImage[ d ] = - ( interval.min( d ) + interval.dimension( d ) / 2.0 ) ;
 		}
@@ -141,7 +121,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		bdvWindowDimensions[ 0 ] = bdv.getBdvHandle().getViewerPanel().getWidth();
 		bdvWindowDimensions[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
 
-		affineTransform3D.scale(  1.05 * bdvWindowDimensions[ 0 ] / interval.dimension( 0 ) );
+		affineTransform3D.scale(  zoomFactor * bdvWindowDimensions[ 0 ] / interval.dimension( 0 ) );
 
 		double[] shiftToBdvWindowCenter = new double[ 3 ];
 

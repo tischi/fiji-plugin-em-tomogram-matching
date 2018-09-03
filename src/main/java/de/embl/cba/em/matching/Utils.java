@@ -1,5 +1,6 @@
 package de.embl.cba.em.matching;
 
+import bdv.util.Bdv;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.FloatProcessor;
@@ -34,6 +35,7 @@ import java.util.regex.Pattern;
 public class Utils
 {
 
+	public static final String OVERVIEW_NAME = "overview";
 	public static boolean showIntermediateResults = false;
 
 	public static final String WELL_PLATE_96 = "96 well plate";
@@ -408,5 +410,23 @@ public class Utils
 		}
 
 		return doubles;
+	}
+
+	public static void updateBdv( Bdv bdv, long msecs )
+	{
+		(new Thread(new Runnable(){
+			public void run(){
+				try
+				{
+					Thread.sleep( msecs );
+				}
+				catch ( InterruptedException e )
+				{
+					e.printStackTrace();
+				}
+
+				bdv.getBdvHandle().getViewerPanel().requestRepaint();
+			}
+		})).start();
 	}
 }

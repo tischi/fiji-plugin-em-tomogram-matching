@@ -16,11 +16,15 @@ import java.util.ArrayList;
 
 public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 {
-	public static final ARGBType OVERVIEW_COLOR = new ARGBType( ARGBType.rgba( 255, 0, 255, 255 ) );
+	public static final ARGBType OVERVIEW_EM_COLOR = new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
 	private final MatchedTomogramReviewSettings settings;
 	private ArrayList< File > inputFiles;
 	private Bdv bdv;
 	private ArrayList< ImageSource > imageSources;
+	private double displayRangeFactorMin = 0.9;
+	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
+
+
 
 	public MatchedTomogramReview( MatchedTomogramReviewSettings settings )
 	{
@@ -45,26 +49,37 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	{
 		for ( File file : inputFiles )
 		{
-			final SpimData spimData = openSpimData( file );
-
-			final BdvStackSource< ? > bdvStackSource = BdvFunctions.show( spimData, BdvOptions.options().addTo( bdv ) ).get( 0 );
-
-			setDisplayRange( bdvStackSource );
-
-			setColor( file, bdvStackSource );
-
-			bdv = bdvStackSource.getBdvHandle();
-
-			imageSources.add( new ImageSource( file, bdvStackSource, spimData ) );
-
+			showWithBdv( file );
 		}
+	}
+
+	private void showWithBdv( File file )
+	{
+		final SpimData spimData = openSpimData( file );
+
+		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show( spimData,
+				BdvOptions.options()
+						.addTo( bdv )
+						.preferredSize( 800, 800 )
+				).get( 0 );
+
+		setDisplayRange( bdvStackSource );
+
+		setColor( file, bdvStackSource );
+
+		bdv = bdvStackSource.getBdvHandle();
+
+		imageSources.add( new ImageSource( file, bdvStackSource, spimData ) );
+
+		Utils.updateBdv( bdv,1000 );
+
 	}
 
 	private void setColor( File file, BdvStackSource< ? > bdvStackSource )
 	{
 		if ( file.getName().contains( "overview" ) )
 		{
-			bdvStackSource.setColor( OVERVIEW_COLOR );
+			bdvStackSource.setColor( OVERVIEW_EM_COLOR );
 		}
 	}
 
@@ -84,6 +99,9 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 			if ( value < min ) min = value;
 			if ( value > max ) max = value;
 		}
+
+		min *= displayRangeFactorMin;
+		max *= displayRangeFactorMax;
 
 		bdvStackSource.setDisplayRange( min, max );
 	}
