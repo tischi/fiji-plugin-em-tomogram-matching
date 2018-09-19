@@ -1,7 +1,8 @@
 <component name="libraryTable">
-  <library name="javacpp">
+  <library name="javacpp" type="repository">
+    <properties maven-id="org.bytedeco:javacpp:0.10" />
     <CLASSES>
-      <root url="jar:///Applications/Fiji.app/plugins/javacpp.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/javacpp/0.10/javacpp-0.10.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

@@ -52,14 +52,8 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	@Parameter
 	public File overviewImage = settings.overviewImage;
 
-	@Parameter
-	public double overviewImageCalibrationNanometer = settings.overviewImageCalibrationNanometer;
-
 	@Parameter ( style = "directory" )
 	public File tomogramInputDirectory = settings.tomogramInputDirectory;
-
-	@Parameter
-	public double tomogramCalibrationNanometer = settings.tomogramCalibrationNanometer;
 
 	@Parameter
 	public double tomogramAngleDegrees = settings.tomogramAngleDegrees;
@@ -83,14 +77,11 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	}
 
 
-
 	public void setSettingsFromUI()
 	{
 		settings.outputDirectory = outputDirectory;
 		settings.overviewImage = overviewImage;
 		settings.tomogramInputDirectory = tomogramInputDirectory;
-		settings.overviewImageCalibrationNanometer = overviewImageCalibrationNanometer;
-		settings.tomogramCalibrationNanometer = tomogramCalibrationNanometer;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
 	}

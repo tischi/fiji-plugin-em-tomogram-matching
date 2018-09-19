@@ -74,7 +74,7 @@ public class BdvExport
 		// propose reasonable mipmap settings
 		final ExportMipmapInfo autoMipmapSettings = ProposeMipmaps.proposeMipmaps( new BasicViewSetup( 0, "", size, voxelSize ) );
 
-		final ProgressWriter progressWriter = new ProgressWriterIJ();
+		final ProgressWriter progressWriter = new ProgressWriterBdv();
 		progressWriter.out().println( "starting export..." );
 
 		// create ImgLoader wrapping the image

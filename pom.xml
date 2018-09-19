@@ -8,8 +8,8 @@
 		<version>22.3.0</version>
 	</parent>
 
-	<artifactId>fiji-plugin-em-tomogram-matching</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<artifactId>fiji-plugin-tomogramMatching</artifactId>
+	<version>0.1.00</version>
 
 	<name>Fiji Plugin EM Tomogram Matching</name>
 	<description>TODO</description>
@@ -114,6 +114,29 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>bigdataviewer_fiji</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacpp</artifactId>
+			<version>0.10</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv</artifactId>
+			<version>0.10</version>
+		</dependency>
+
+		<dependency>
+			<groupId>ome</groupId>
+			<artifactId>bio-formats_plugins</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>ch.systems.cisd</groupId>
+					<artifactId>jhdf5</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 	</dependencies>

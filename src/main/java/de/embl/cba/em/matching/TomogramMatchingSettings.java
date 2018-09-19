@@ -11,4 +11,5 @@ public class TomogramMatchingSettings
 	public double tomogramCalibrationNanometer = 6.275;
 	public double tomogramAngleDegrees = 11.5;
 	public boolean showIntermediateResults = false;
+	public boolean saveResults = true;
 }

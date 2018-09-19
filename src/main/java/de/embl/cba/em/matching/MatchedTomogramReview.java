@@ -25,11 +25,10 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
 
 
-
 	public MatchedTomogramReview( MatchedTomogramReviewSettings settings )
 	{
 		this.settings = settings;
-		this.imageSources = new ArrayList<>(  );
+		this.imageSources = new ArrayList<>( );
 	}
 
 	public void run()
@@ -57,10 +56,14 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	{
 		final SpimData spimData = openSpimData( file );
 
-		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show( spimData,
+		setName( file.getName(), spimData );
+
+		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
+				spimData,
 				BdvOptions.options()
 						.addTo( bdv )
 						.preferredSize( 800, 800 )
+						.transformEventHandlerFactory( new BehaviourTransformEventHandler3DWithoutRotation.BehaviourTransformEventHandler3DFactory() )
 				).get( 0 );
 
 		setDisplayRange( bdvStackSource );
@@ -75,6 +78,11 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 
 	}
 
+	private void setName( String name, SpimData spimData )
+	{
+		spimData.getSequenceDescription().getViewSetupsOrdered().get( 0 ).getChannel().setName( name );
+	}
+
 	private void setColor( File file, BdvStackSource< ? > bdvStackSource )
 	{
 		if ( file.getName().contains( "overview" ) )
@@ -85,7 +93,9 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 
 	private void setDisplayRange( BdvStackSource< ? > bdvStackSource )
 	{
-		final RandomAccessibleInterval< T > lowResSource = (RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, 0 );
+		final int numMipmapLevels = bdvStackSource.getSources().get( 0 ).getSpimSource().getNumMipmapLevels();
+
+		final RandomAccessibleInterval< T > lowResSource = (RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, numMipmapLevels - 1  );
 
 		final Cursor< T > cursor = Views.iterable( lowResSource ).cursor();
 

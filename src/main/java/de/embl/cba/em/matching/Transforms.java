@@ -65,8 +65,7 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	}
 
 	public static < T extends NumericType< T > & NativeType< T > >
-	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai,
-													InvertibleRealTransform transform )
+	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai, InvertibleRealTransform transform )
 	{
 		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new NLinearInterpolatorFactory() );
 		final FinalInterval transformedInterval = createBoundingIntervalAfterTransformation( rai, transform );

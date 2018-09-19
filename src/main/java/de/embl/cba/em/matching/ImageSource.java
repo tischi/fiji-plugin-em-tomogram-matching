@@ -46,5 +46,10 @@ public class ImageSource
 		return boundingIntervalAfterTransformation;
 	}
 
+	public SpimData getSpimData()
+	{
+		return spimData;
+	}
+
 
 }

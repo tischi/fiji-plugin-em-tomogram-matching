@@ -2,16 +2,21 @@ package de.embl.cba.em.matching;
 
 import bdv.util.*;
 import net.imglib2.FinalInterval;
+import net.imglib2.FinalRealInterval;
+import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.view.IntervalView;
+import net.imglib2.view.Views;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
-public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel implements ActionListener
+public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
 {
 	JFrame frame;
 	JComboBox imageSourcesComboBox;
@@ -29,6 +34,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	public void showUI()
 	{
 		addImageSourceSelectionPanel( this );
+		addScreenShotButton( this );
 		createAndShowUI();
 	}
 
@@ -39,6 +45,50 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		panel.setBorder( BorderFactory.createEmptyBorder(0, 10, 10, 10) );
 		panel.add( Box.createHorizontalGlue() );
 		return panel;
+	}
+
+
+	private void addScreenShotButton( JPanel panel )
+	{
+		final JPanel horizontalLayoutPanel = horizontalLayoutPanel();
+
+		final JButton button = new JButton( "Take screenshot" );
+
+		button.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				takeScreenShot( bdv );
+			}
+		} );
+
+		horizontalLayoutPanel.add( button );
+
+		panel.add( horizontalLayoutPanel );
+	}
+
+	public void takeScreenShot( Bdv bdv )
+	{
+
+		for ( ImageSource imageSource : imageSources )
+		{
+			final AffineTransform3D affineTransform3D = imageSource.getSpimData().getViewRegistrations().getViewRegistration( 0, 0 ).getModel();
+			final RandomAccessibleInterval< T > rai = Utils.getRandomAccessibleInterval( imageSource.getSpimData() );
+			final FinalInterval imageInterval = imageSource.getInterval();
+
+			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
+
+			final boolean intersecting = Utils.intersecting( imageInterval, viewerInterval );
+
+
+			if ( intersecting )
+			{
+				final IntervalView< T > screenshot = Views.interval( rai, Utils.asInterval( viewerInterval ) );
+				//ImageJFunctions.show( screenshot );
+			}
+		}
+
 	}
 
 	private void addImageSourceSelectionPanel( JPanel panel )
@@ -53,7 +103,15 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		horizontalLayoutPanel.add( imageSourcesComboBox );
 
-		imageSourcesComboBox.addActionListener( this );
+		imageSourcesComboBox.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				zoomToSource( ( String ) imageSourcesComboBox.getSelectedItem() );
+				Utils.updateBdv( bdv,1000 );
+			}
+		} );
 
 		panel.add( horizontalLayoutPanel );
 	}
@@ -71,17 +129,6 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		}
 
 		imageSourcesComboBox.updateUI();
-	}
-
-	@Override
-	public void actionPerformed( ActionEvent e )
-	{
-		if ( e.getSource() == imageSourcesComboBox )
-		{
-			zoomToSource( ( String ) imageSourcesComboBox.getSelectedItem() );
-			Utils.updateBdv( bdv,1000 );
-		}
-
 	}
 
 	private void zoomToSource( String sourceName )

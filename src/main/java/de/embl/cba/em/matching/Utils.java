@@ -1,17 +1,28 @@
 package de.embl.cba.em.matching;
 
+import bdv.ViewerImgLoader;
+import bdv.ViewerSetupImgLoader;
 import bdv.util.Bdv;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.measure.Calibration;
 import ij.process.FloatProcessor;
-import net.imglib2.Cursor;
-import net.imglib2.FinalInterval;
-import net.imglib2.Interval;
-import net.imglib2.RandomAccessibleInterval;
+import loci.common.services.DependencyException;
+import loci.common.services.ServiceException;
+import loci.common.services.ServiceFactory;
+import loci.formats.FormatException;
+import loci.formats.IFormatReader;
+import loci.formats.ImageReader;
+import loci.formats.meta.IMetadata;
+import loci.formats.services.OMEXMLService;
+import loci.plugins.in.ImporterOptions;
+import mpicbg.spim.data.SpimData;
+import net.imglib2.*;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.cache.img.SingleCellArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
@@ -25,12 +36,16 @@ import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import loci.plugins.BF;
+import ome.units.quantity.Length;
 
 public class Utils
 {
@@ -80,11 +95,19 @@ public class Utils
 	public static  < T extends RealType< T > & NativeType< T > >
 	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai )
 	{
-		int w = (int) rai.dimension( 0 );
-		int h = (int) rai.dimension( 1 );
+
+		RandomAccessibleInterval< T > rai2D = rai;
+
+		if ( rai.numDimensions() == 3 )
+		{
+			rai2D = Views.hyperSlice( rai, 2, 0 );
+		}
+
+		int w = (int) rai2D.dimension( 0 );
+		int h = (int) rai2D.dimension( 1 );
 		float[] floats = new float[ w * h ];
 
-		final Cursor< T > inputCursor = Views.flatIterable( rai ).cursor();
+		final Cursor< T > inputCursor = Views.flatIterable( rai2D ).cursor();
 		int i = 0;
 		while( inputCursor.hasNext() )
 		{
@@ -394,10 +417,156 @@ public class Utils
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > openImageFile( File file )
+	RandomAccessibleInterval< T > openImage( File file )
 	{
-		final ImagePlus imp = IJ.openImage( file.getAbsolutePath() );
+		Utils.log( "Opening " + file.getName() + "...");
+
+		ImagePlus imp = IJ.openImage( file.getAbsolutePath() );
+
+		if( imp == null )
+		{
+			imp = openImagePlusUsingBF( file );
+		}
+
+		if ( imp == null )
+		{
+			Utils.error( "Could not open file: " + file.getAbsolutePath() );
+			return null;
+		}
+
 		return ImageJFunctions.wrapReal( imp );
+	}
+
+
+	public static double getNanometerVoxelSize( ImagePlus imagePlus )
+	{
+		final Calibration calibration = imagePlus.getCalibration();
+
+		String unit = calibration.getUnit();
+
+		double voxelSize = calibration.pixelWidth;
+
+		if ( unit != null )
+		{
+			if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
+			{
+				voxelSize = voxelSize;
+			}
+			else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
+			{
+				voxelSize = voxelSize * 1000D;
+			}
+		}
+
+		return voxelSize;
+	}
+
+	public static  < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > openRandomAccessibleIntervalUsingBF( File file )
+	{
+		ImagePlus[] imps = new ImagePlus[ 0 ];
+
+		try
+		{
+			imps = BF.openImagePlus( file.getAbsolutePath() );
+		}
+		catch ( FormatException e )
+		{
+			e.printStackTrace();
+		}
+		catch ( IOException e )
+		{
+			e.printStackTrace();
+		}
+
+		return ImageJFunctions.wrapReal( imps[ 0 ] );
+	}
+
+	public static ImagePlus openImagePlusUsingBF( File file )
+	{
+		ImagePlus[] imps = new ImagePlus[ 0 ];
+
+		try
+		{
+			final ImporterOptions importerOptions = new ImporterOptions();
+			importerOptions.setVirtual( true );
+			importerOptions.setId( file.getAbsolutePath() );
+			imps = BF.openImagePlus( importerOptions );
+		}
+		catch ( FormatException e )
+		{
+			e.printStackTrace();
+		}
+		catch ( IOException e )
+		{
+			e.printStackTrace();
+		}
+
+		return imps[ 0 ];
+	}
+
+
+	public static double getNanometerPixelWidthUsingBF( File file )
+	{
+		Utils.log( "Reading voxel size from " + file.getName() );
+
+		// create OME-XML metadata store
+		ServiceFactory factory = null;
+		try
+		{
+			factory = new ServiceFactory();
+			OMEXMLService service = factory.getInstance(OMEXMLService.class);
+			IMetadata meta = service.createOMEXMLMetadata();
+
+			// create format reader
+			IFormatReader reader = new ImageReader();
+			reader.setMetadataStore( meta );
+
+			// initialize file
+			reader.setId( file.getAbsolutePath() );
+			reader.setSeries(0);
+
+			String unit = meta.getPixelsPhysicalSizeX( 0 ).unit().getSymbol();
+
+			double voxelSize = -1;
+
+			if ( unit != null )
+			{
+				if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
+				{
+					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() * 1D;
+				}
+				else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
+				{
+					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() * 1000D;
+				}
+				else if ( unit.hashCode() == 197 || unit.equals( "Angstrom") )
+				{
+					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() / 10D;
+				}
+			}
+
+			if ( voxelSize == -1 )
+			{
+				Utils.error( "Could not interpret calibration unit of " + file.getName() +
+						"; unit found was: " + unit );
+			}
+
+			Utils.log("Voxel size [nm]: " + voxelSize );
+			return voxelSize;
+
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+		}
+
+		return 0.0;
+	}
+
+	private static void error( String s )
+	{
+		IJ.showMessage( s );
 	}
 
 	public static double[] as3dDoubles( int[] ints )
@@ -410,6 +579,41 @@ public class Utils
 		}
 
 		return doubles;
+	}
+
+	public static boolean intersecting( RealInterval requestedInterval, RealInterval imageInterval )
+	{
+		FinalRealInterval intersect = Intervals.intersect( requestedInterval, imageInterval );
+
+		for ( int d = 0; d < intersect.numDimensions(); ++d )
+		{
+			if ( intersect.realMax( d ) <  intersect.realMin( d ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	public static FinalInterval asInterval( FinalRealInterval realInterval )
+	{
+		double[] realMin = new double[ 3 ];
+		double[] realMax = new double[ 3 ];
+		realInterval.realMin( realMin );
+		realInterval.realMax( realMax );
+
+		long[] min = new long[ 3 ];
+		long[] max = new long[ 3 ];
+
+		for ( int d = 0; d < min.length; ++d )
+		{
+			min[ d ] = (long) realMin[ d ];
+			max[ d ] = (long) realMax[ d ];
+		}
+
+		return new FinalInterval( min, max );
 	}
 
 	public static void updateBdv( Bdv bdv, long msecs )
@@ -428,5 +632,26 @@ public class Utils
 				bdv.getBdvHandle().getViewerPanel().requestRepaint();
 			}
 		})).start();
+	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > getRandomAccessibleInterval( SpimData spimData )
+	{
+		final ViewerImgLoader imgLoader = ( ViewerImgLoader ) spimData.getSequenceDescription().getImgLoader();
+		final ViewerSetupImgLoader< ?, ? > setupImgLoader = imgLoader.getSetupImgLoader( 0 );
+		final RandomAccessibleInterval< T > image = ( RandomAccessibleInterval< T > ) setupImgLoader.getImage( 0, 0 );
+		return image;
+	}
+
+	public static FinalRealInterval getCurrentViewerInterval( Bdv bdv )
+	{
+		AffineTransform3D viewerTransform = new AffineTransform3D();
+		bdv.getBdvHandle().getViewerPanel().getState().getViewerTransform( viewerTransform );
+		viewerTransform = viewerTransform.inverse();
+		final long[] min = new long[ 3 ];
+		final long[] max = new long[ 3 ];
+		max[ 0 ] = bdv.getBdvHandle().getViewerPanel().getWidth();
+		max[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
+		return viewerTransform.estimateBounds( new FinalInterval( min, max ) );
 	}
 }

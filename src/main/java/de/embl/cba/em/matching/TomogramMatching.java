@@ -5,7 +5,9 @@ import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform2D;
+import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.IntervalView;
@@ -34,11 +36,16 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		this.settings = settings;
 		this.opService = opService;
+
+		settings.saveResults = true;
+
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
 	public void run()
 	{
+		openOverview();
+		if ( settings.saveResults ) saveOverviewAsBdv();
 		createTomogramFileList();
 		computeAndSaveRegisteredTomograms();
 	}
@@ -65,46 +72,56 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void computeAndSaveRegisteredTomograms()
 	{
-		openOverview();
-
-//		saveOverviewAsBdv();
-
 		for ( File tomogramFile : tomogramFiles )
 		{
 			computeAndSaveRegisteredTomogram( tomogramFile );
 		}
-
 	}
 
 	private void openOverview()
 	{
-		overview = Utils.openImageFile( settings.overviewImage );
+		overview = Utils.openImage( settings.overviewImage );
+		settings.overviewImageCalibrationNanometer = Utils.getNanometerPixelWidthUsingBF( settings.overviewImage );
 
 		// rotate
-		final AffineTransform2D affineTransform2D = new AffineTransform2D();
-		affineTransform2D.rotate( Math.toRadians( - settings.tomogramAngleDegrees ) );
-		overview = Transforms.createTransformedView( overview, affineTransform2D );
-
-		showIntermediateResult( overview );
+		if ( overview.numDimensions() == 2 )
+		{
+			final AffineTransform2D affineTransform2D = new AffineTransform2D();
+			affineTransform2D.rotate( Math.toRadians( -settings.tomogramAngleDegrees ) );
+			overview = Transforms.createTransformedView( overview, affineTransform2D );
+		}
+		else if ( overview.numDimensions() == 3 )
+		{
+			final AffineTransform3D affineTransform3D = new AffineTransform3D();
+			affineTransform3D.rotate( 2, Math.toRadians( -settings.tomogramAngleDegrees ) );
+			overview = Transforms.createTransformedView( overview, affineTransform3D );
+		}
 
 		overviewProcessor = asFloatProcessor( overview );
+
+		if ( settings.showIntermediateResults ) new ImagePlus( "", overviewProcessor  ).show();
 	}
 
 	private void saveOverviewAsBdv()
 	{
-		Utils.log( "Exporting overiew image..." );
+		(new Thread(new Runnable(){
+			public void run(){
+				Utils.log( "Exporting overview image..." );
 
-		ImagePlus imagePlus = getOverviewAs3dImagePlus();
+				ImagePlus imagePlus = getOverviewAs3dImagePlus();
 
-		double[] calibration = new double[ 3 ];
-		calibration[ 0 ] = settings.overviewImageCalibrationNanometer;
-		calibration[ 1 ] = calibration[ 0 ];
-		calibration[ 2 ] = 2000;
+				double[] calibration = new double[ 3 ];
+				calibration[ 0 ] = settings.overviewImageCalibrationNanometer;
+				calibration[ 1 ] = calibration[ 0 ];
+				calibration[ 2 ] = 2000;
 
-		double[] offset = new double[ 3 ];
+				double[] offset = new double[ 3 ];
 
-		String path = settings.outputDirectory + File.separator + "overview";
-		BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
+				String path = settings.outputDirectory + File.separator + "overview";
+				BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
+
+				}
+		})).start();
 
 	}
 
@@ -128,6 +145,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		{
 			overview3d = Views.addDimension( overview, 1, 3 );
 		}
+
 		return overview3d;
 	}
 
@@ -135,17 +153,20 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void computeAndSaveRegisteredTomogram( File tomogramFile )
 	{
-		Utils.log( "Matching " + tomogramFile.getName() +"..." );
+		Utils.log( "Matching " + tomogramFile.getName() +" ..." );
 
-		final RandomAccessibleInterval< T > tomogram = Utils.openImageFile( tomogramFile );
+		Utils.log( "Opening..." );
+		final RandomAccessibleInterval< T > tomogram = openTomogram( tomogramFile );
 
 		// avg projection
+		Utils.log( "Computing average projection..." );
 		final Projection projection = new Projection( tomogram, Z_DIMENSION );
 		final RandomAccessibleInterval< T > projected = projection.average();
 
 		showIntermediateResult( projected );
 
 		// scale
+		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected );
 		final RandomAccessibleInterval< T > downscaled = Algorithms.createDownscaledArrayImg( projected, scaling );
 
@@ -158,13 +179,20 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		//showIntermediateResult( cropped );
 
 		// match
+		Utils.log( "Finding position in overview image..." );
 		final double[] position = computePositionWithinOverviewImage( downscaled );
 
 		Utils.log( "Best match found at: " + position[ 0 ] + ", " + position[ 1 ] );
 
 		// save
-		saveTomogramAsBdv( tomogram, position, tomogramFile );
+		if ( settings.saveResults ) saveTomogramAsBdv( tomogram, position, tomogramFile );
 
+	}
+
+	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
+	{
+		settings.tomogramCalibrationNanometer = Utils.getNanometerPixelWidthUsingBF( tomogramFile );
+		return Utils.openImage( tomogramFile );
 	}
 
 	private double[] computePositionWithinOverviewImage( RandomAccessibleInterval cropped )
@@ -188,18 +216,24 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void saveTomogramAsBdv( RandomAccessibleInterval< T > tomogram, double[] offset, File tomogramFile )
 	{
-		Utils.log( "Saving matched " + tomogramFile.getName() + " ..." );
+		(new Thread(new Runnable()
+		{
+			public void run()
+			{
+				Utils.log( "Saving matched " + tomogramFile.getName() + " ..." );
 
-		final IntervalView< T > tomogramWithImpDimensionOrder = Views.permute(
+				final IntervalView< T > tomogramWithImpDimensionOrder = Views.permute(
 						Views.addDimension( tomogram, 0, 0 ),
 						2, 3 );
 
-		BdvExport.export(
-				Utils.asImagePlus( tomogramWithImpDimensionOrder ),
-				settings.outputDirectory + File.separator + tomogramFile.getName(),
-				getTomogramCalibration(),
-				"nanometer",
-				offset );
+				BdvExport.export(
+						Utils.asImagePlus( tomogramWithImpDimensionOrder ),
+						settings.outputDirectory + File.separator + tomogramFile.getName(),
+						getTomogramCalibration(),
+						"nanometer",
+						offset );
+			}
+		})).start();
 
 	}
 
