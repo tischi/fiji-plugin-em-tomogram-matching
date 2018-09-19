@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="opencv-macosx-x86_64">
-    <CLASSES>
-      <root url="jar:///Applications/Fiji.app/plugins/opencv-macosx-x86_64.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
