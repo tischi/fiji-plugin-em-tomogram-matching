@@ -118,6 +118,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 				double[] offset = new double[ 3 ];
 
 				String path = settings.outputDirectory + File.separator + "overview";
+				imagePlus.setTitle( "overview" );
 				BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
 
 				}
@@ -226,8 +227,12 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 						Views.addDimension( tomogram, 0, 0 ),
 						2, 3 );
 
+				final ImagePlus imagePlus = Utils.asImagePlus( tomogramWithImpDimensionOrder );
+
+				imagePlus.setTitle( tomogramFile.getName().split( "\\." )[ 0 ] );
+
 				BdvExport.export(
-						Utils.asImagePlus( tomogramWithImpDimensionOrder ),
+						imagePlus,
 						settings.outputDirectory + File.separator + tomogramFile.getName(),
 						getTomogramCalibration(),
 						"nanometer",

@@ -1,10 +1,10 @@
 package de.embl.cba.em.matching;
 
 import bdv.util.*;
+import bdv.viewer.state.SourceState;
 import net.imglib2.FinalInterval;
 import net.imglib2.FinalRealInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -12,6 +12,7 @@ import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
 {
 	JFrame frame;
-	JComboBox imageSourcesComboBox;
+	JComboBox tomogramComboBox;
 
 	private final ArrayList< ImageSource > imageSources;
 	private final Bdv bdv;
@@ -34,9 +35,73 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	public void showUI()
 	{
 		addImageSourceSelectionPanel( this );
+		addOverviewImageUI( this );
 		addScreenShotButton( this );
 		createAndShowUI();
 	}
+
+	private void addOverviewImageUI( JPanel panel )
+	{
+		for ( SourceState< ? > source : bdv.getBdvHandle().getViewerPanel().getState().getSources() )
+		{
+			final String name = source.getSpimSource().getName();
+			int a = 1;
+//			if ( source.getName().contains( Utils.OVERVIEW_NAME ) )
+//			{
+//				final List< ViewSetup > viewSetupsOrdered = source.getSpimData().getSequenceDescription().getViewSetupsOrdered();
+//
+//				for ( int i = 0; i < viewSetupsOrdered.size(); ++i )
+//				{
+//					addChannelUI( panel, viewSetupsOrdered.get( 0 ).getName() + "-channel" + i );
+//				}
+//			}
+		}
+
+	}
+
+
+	private void addChannelUI( JPanel panel, String name, Color color )
+	{
+		int[] buttonDimensions = new int[]{ 50, 30 };
+
+		JPanel channelPanel = new JPanel();
+		channelPanel.setLayout( new BoxLayout( channelPanel, BoxLayout.LINE_AXIS ) );
+		channelPanel.setBorder( BorderFactory.createEmptyBorder(0,10,0,10) );
+		channelPanel.add( Box.createHorizontalGlue() );
+		channelPanel.setOpaque( true );
+		channelPanel.setBackground( color );
+
+		JLabel jLabel = new JLabel( name );
+		jLabel.setHorizontalAlignment( SwingConstants.CENTER );
+
+		JButton colorButton = getColorButton( buttonDimensions );
+
+		JButton brightnessButton = new JButton( "B" );
+		brightnessButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		//brightnessButton.addActionListener(this);
+
+		JButton toggleButton = new JButton( "T" );
+		toggleButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		//toggleButton.addActionListener(this);
+
+
+		channelPanel.add( jLabel );
+		channelPanel.add( colorButton );
+		channelPanel.add( brightnessButton );
+		channelPanel.add( toggleButton );
+
+		panel.add( channelPanel );
+
+	}
+
+	private JButton getColorButton( int[] buttonDimensions )
+	{
+		JButton colorButton = new JButton( "C" );
+		colorButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		//colorButton.addActionListener(this);
+		return colorButton;
+	}
+
 
 	private JPanel horizontalLayoutPanel()
 	{
@@ -97,18 +162,18 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		horizontalLayoutPanel.add( new JLabel( "Image source" ) );
 
-		imageSourcesComboBox = new JComboBox();
+		tomogramComboBox = new JComboBox();
 
-		updateImagesSourcesComboBoxItems();
+		updateTomogramComboBoxItems();
 
-		horizontalLayoutPanel.add( imageSourcesComboBox );
+		horizontalLayoutPanel.add( tomogramComboBox );
 
-		imageSourcesComboBox.addActionListener( new ActionListener()
+		tomogramComboBox.addActionListener( new ActionListener()
 		{
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				zoomToSource( ( String ) imageSourcesComboBox.getSelectedItem() );
+				zoomToSource( ( String ) tomogramComboBox.getSelectedItem() );
 				Utils.updateBdv( bdv,1000 );
 			}
 		} );
@@ -116,19 +181,22 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		panel.add( horizontalLayoutPanel );
 	}
 
-	private void updateImagesSourcesComboBoxItems()
+	private void updateTomogramComboBoxItems()
 	{
-		imageSourcesComboBox.removeAllItems();
+		tomogramComboBox.removeAllItems();
 
-		for( ImageSource source : imageSources )
+		for ( SourceState< ? > source : bdv.getBdvHandle().getViewerPanel().getState().getSources() )
 		{
-			if ( ! source.getName().contains( Utils.OVERVIEW_NAME ) )
+			final String name = source.getSpimSource().getName();
+
+			if ( ! name.contains( Utils.OVERVIEW_NAME ) )
 			{
-				imageSourcesComboBox.addItem( source.getName() );
+				tomogramComboBox.addItem( name );
 			}
+
 		}
 
-		imageSourcesComboBox.updateUI();
+		tomogramComboBox.updateUI();
 	}
 
 	private void zoomToSource( String sourceName )
@@ -210,6 +278,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		this.repaint();
 		frame.pack();
 	}
+
 
 
 

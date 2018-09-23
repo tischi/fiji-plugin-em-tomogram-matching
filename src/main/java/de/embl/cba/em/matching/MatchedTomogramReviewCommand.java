@@ -26,7 +26,7 @@ import org.scijava.widget.FileWidget;
 import java.io.File;
 import java.util.ArrayList;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Registration>EMBL>Review matched tomograms" )
+@Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram browsing" )
 public class MatchedTomogramReviewCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter

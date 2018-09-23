@@ -56,7 +56,7 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	{
 		final SpimData spimData = openSpimData( file );
 
-		setName( file.getName(), spimData );
+		setNames( spimData, file.getName() );
 
 		final BdvStackSource< ? > bdvStackSource = BdvFunctions.show(
 				spimData,
@@ -78,9 +78,16 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 
 	}
 
-	private void setName( String name, SpimData spimData )
+	private void setNames( SpimData spimData, String name )
 	{
-		spimData.getSequenceDescription().getViewSetupsOrdered().get( 0 ).getChannel().setName( name );
+		int n = spimData.getSequenceDescription().getViewSetupsOrdered().size();
+
+		for ( int i = 0; i < n; ++i )
+		{
+			// TODO: does not work, maybe because SpimData is inherently disk resident?
+			// spimData.getSequenceDescription().getViewSetupsOrdered().get( i ).getChannel().setName( name + "-channel" + i );
+		}
+
 	}
 
 	private void setColor( File file, BdvStackSource< ? > bdvStackSource )

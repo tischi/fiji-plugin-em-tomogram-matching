@@ -92,7 +92,7 @@ public class BdvExport
 		final HashMap< Integer, BasicViewSetup > setups = new HashMap<>( numSetups );
 		for ( int s = 0; s < numSetups; ++s )
 		{
-			final BasicViewSetup setup = new BasicViewSetup( s, String.format( "channel %d", s + 1 ), size, voxelSize );
+			final BasicViewSetup setup = new BasicViewSetup( s, String.format( imp.getTitle() + " - channel %d", s + 1 ), size, voxelSize );
 			setup.setAttribute( new Channel( s + 1 ) );
 			setups.put( s, setup );
 		}

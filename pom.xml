@@ -5,11 +5,12 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>22.3.0</version>
+		<version>23.2.0</version>
 	</parent>
 
 	<artifactId>fiji-plugin-tomogramMatching</artifactId>
-	<version>0.1.00</version>
+	<version>0.1.01</version>
+	<url>https://github.com/imglib/fiji-plugin-em-tomogram-matching/issues</url>
 
 	<name>Fiji Plugin EM Tomogram Matching</name>
 	<description>TODO</description>
@@ -72,7 +73,6 @@
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>EMBL</license.copyrightOwners>
 		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>
-		<enforcer.skip>true</enforcer.skip>
 	</properties>
 
 

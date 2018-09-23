@@ -28,7 +28,7 @@ public class ImageSource
 
 	public String getName()
 	{
-		return file.getName();
+		return file.getName().split( "\\." )[ 0 ];
 	}
 
 	public File getFile()
