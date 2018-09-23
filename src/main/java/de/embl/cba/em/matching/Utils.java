@@ -18,6 +18,7 @@ import loci.formats.services.OMEXMLService;
 import loci.plugins.in.ImporterOptions;
 import mpicbg.spim.data.SpimData;
 import net.imglib2.*;
+import net.imglib2.Cursor;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.cache.img.SingleCellArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -26,6 +27,7 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
@@ -35,6 +37,7 @@ import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,6 +71,12 @@ public class Utils
 	public static void debug( String msg )
 	{
 		IJ.log( "[DEBUG] " + msg );
+	}
+
+
+	public static ARGBType asArgbType( Color color )
+	{
+		return new ARGBType( ARGBType.rgba( color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha() ) );
 	}
 
 	public static int[] getCellPos( String cellPosString )

@@ -1,5 +1,7 @@
 package de.embl.cba.em.matching;
 
+import bdv.BdvHelper;
+import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
 import net.imglib2.FinalInterval;
@@ -10,12 +12,14 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
+import uihelper.UiHelper;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
 {
@@ -34,7 +38,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	public void showUI()
 	{
-		addImageSourceSelectionPanel( this );
+		addSourceZoomPanel( this );
 		addOverviewImageUI( this );
 		addScreenShotButton( this );
 		createAndShowUI();
@@ -42,25 +46,24 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	private void addOverviewImageUI( JPanel panel )
 	{
-		for ( SourceState< ? > source : bdv.getBdvHandle().getViewerPanel().getState().getSources() )
+		final List< ConverterSetup > converterSetups = bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
+		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
+
+		for ( int i = 0; i < sources.size(); ++i )
 		{
-			final String name = source.getSpimSource().getName();
-			int a = 1;
-//			if ( source.getName().contains( Utils.OVERVIEW_NAME ) )
-//			{
-//				final List< ViewSetup > viewSetupsOrdered = source.getSpimData().getSequenceDescription().getViewSetupsOrdered();
-//
-//				for ( int i = 0; i < viewSetupsOrdered.size(); ++i )
-//				{
-//					addChannelUI( panel, viewSetupsOrdered.get( 0 ).getName() + "-channel" + i );
-//				}
-//			}
+			final String name = sources.get( i ).getSpimSource().getName();
+			final Color color = new Color( 255, 255, 255 );
+			converterSetups.get( i ).setColor( Utils.asArgbType( color ) );
+			addSourceDisplaySettingsUI( panel, name, converterSetups.get( i ), color );
 		}
 
 	}
 
 
-	private void addChannelUI( JPanel panel, String name, Color color )
+	private static void addSourceDisplaySettingsUI( JPanel panel,
+													String name,
+													ConverterSetup setup,
+													Color color )
 	{
 		int[] buttonDimensions = new int[]{ 50, 30 };
 
@@ -74,48 +77,30 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		JLabel jLabel = new JLabel( name );
 		jLabel.setHorizontalAlignment( SwingConstants.CENTER );
 
-		JButton colorButton = getColorButton( buttonDimensions );
+		JButton colorButton = UiHelper.getColorButton( buttonDimensions, setup );
 
-		JButton brightnessButton = new JButton( "B" );
-		brightnessButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
-		//brightnessButton.addActionListener(this);
-
-		JButton toggleButton = new JButton( "T" );
-		toggleButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
-		//toggleButton.addActionListener(this);
-
+//		JButton brightnessButton = new JButton( "B" );
+//		brightnessButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+//		//brightnessButton.addActionListener(this);
+//
+//		JButton toggleButton = new JButton( "T" );
+//		toggleButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+//		//toggleButton.addActionListener(this);
+//
 
 		channelPanel.add( jLabel );
 		channelPanel.add( colorButton );
-		channelPanel.add( brightnessButton );
-		channelPanel.add( toggleButton );
+//		channelPanel.add( brightnessButton );
+//		channelPanel.add( toggleButton );
 
 		panel.add( channelPanel );
 
 	}
 
-	private JButton getColorButton( int[] buttonDimensions )
-	{
-		JButton colorButton = new JButton( "C" );
-		colorButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
-		//colorButton.addActionListener(this);
-		return colorButton;
-	}
-
-
-	private JPanel horizontalLayoutPanel()
-	{
-		JPanel panel = new JPanel();
-		panel.setLayout( new BoxLayout(panel, BoxLayout.LINE_AXIS) );
-		panel.setBorder( BorderFactory.createEmptyBorder(0, 10, 10, 10) );
-		panel.add( Box.createHorizontalGlue() );
-		return panel;
-	}
-
 
 	private void addScreenShotButton( JPanel panel )
 	{
-		final JPanel horizontalLayoutPanel = horizontalLayoutPanel();
+		final JPanel horizontalLayoutPanel = UiHelper.getHorizontalLayoutPanel();
 
 		final JButton button = new JButton( "Take screenshot" );
 
@@ -156,11 +141,11 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	}
 
-	private void addImageSourceSelectionPanel( JPanel panel )
+	private void addSourceZoomPanel( JPanel panel )
 	{
-		final JPanel horizontalLayoutPanel = horizontalLayoutPanel();
+		final JPanel horizontalLayoutPanel = UiHelper.getHorizontalLayoutPanel();
 
-		horizontalLayoutPanel.add( new JLabel( "Image source" ) );
+		horizontalLayoutPanel.add( new JLabel( "Zoom to" ) );
 
 		tomogramComboBox = new JComboBox();
 
@@ -173,7 +158,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				zoomToSource( ( String ) tomogramComboBox.getSelectedItem() );
+				BdvHelper.zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 				Utils.updateBdv( bdv,1000 );
 			}
 		} );
@@ -193,62 +178,11 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			{
 				tomogramComboBox.addItem( name );
 			}
-
 		}
 
 		tomogramComboBox.updateUI();
 	}
 
-	private void zoomToSource( String sourceName )
-	{
-		for ( ImageSource imageSource : imageSources )
-		{
-			if ( imageSource.getName().equals( sourceName ) )
-			{
-				zoomToInterval( imageSource.getInterval(), 0.75 );
-			}
-		}
-	}
-
-	public void zoomToInterval( FinalInterval interval, double zoomFactor )
-	{
-		final AffineTransform3D affineTransform3D = getImageZoomTransform( interval, zoomFactor );
-
-		bdv.getBdvHandle().getViewerPanel().setCurrentViewerTransform( affineTransform3D );
-	}
-
-
-	public AffineTransform3D getImageZoomTransform( FinalInterval interval, double zoomFactor )
-	{
-
-		final AffineTransform3D affineTransform3D = new AffineTransform3D();
-
-		double[] shiftToImage = new double[ 3 ];
-
-		for( int d = 0; d < 3; ++d )
-		{
-			shiftToImage[ d ] = - ( interval.min( d ) + interval.dimension( d ) / 2.0 ) ;
-		}
-
-		affineTransform3D.translate( shiftToImage );
-
-		int[] bdvWindowDimensions = new int[ 2 ];
-		bdvWindowDimensions[ 0 ] = bdv.getBdvHandle().getViewerPanel().getWidth();
-		bdvWindowDimensions[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
-
-		affineTransform3D.scale(  zoomFactor * bdvWindowDimensions[ 0 ] / interval.dimension( 0 ) );
-
-		double[] shiftToBdvWindowCenter = new double[ 3 ];
-
-		for( int d = 0; d < 2; ++d )
-		{
-			shiftToBdvWindowCenter[ d ] += bdvWindowDimensions[ d ] / 2.0;
-		}
-
-		affineTransform3D.translate( shiftToBdvWindowCenter );
-
-		return affineTransform3D;
-	}
 
 	/**
 	 * Create the GUI and show it.  For thread safety,
