@@ -7,6 +7,7 @@ import bdv.viewer.state.SourceState;
 import net.imglib2.FinalInterval;
 import net.imglib2.FinalRealInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -102,7 +103,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	{
 		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
 
-		final JButton button = new JButton( "Take screenshot" );
+		final JButton button = new JButton( "Take screenshot (not working..)" );
 
 		button.addActionListener( new ActionListener()
 		{
@@ -121,20 +122,21 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	public void takeScreenShot( Bdv bdv )
 	{
 
-		for ( ImageSource imageSource : imageSources )
+		int n = bdv.getBdvHandle().getViewerPanel().getState().getSources().size();
+		// TODO: loop through Bdv
+		for ( int sourceIndex = 0; sourceIndex < n; ++sourceIndex )
 		{
-			final AffineTransform3D affineTransform3D = imageSource.getSpimData().getViewRegistrations().getViewRegistration( 0, 0 ).getModel();
-			final RandomAccessibleInterval< T > rai = Utils.getRandomAccessibleInterval( imageSource.getSpimData() );
-			final FinalInterval imageInterval = imageSource.getInterval();
+			final FinalInterval interval = BdvUtils.getInterval( bdv, sourceIndex );
+
+			final RandomAccessibleInterval< ? > rai = BdvUtils.getRandomAccessibleInterval( bdv, sourceIndex );
 
 			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
 
-			final boolean intersecting = Utils.intersecting( imageInterval, viewerInterval );
-
+			final boolean intersecting = Utils.intersecting( interval, viewerInterval );
 
 			if ( intersecting )
 			{
-				final IntervalView< T > screenshot = Views.interval( rai, Utils.asInterval( viewerInterval ) );
+				final IntervalView< ? > screenshot = Views.interval( rai, Utils.asInterval( viewerInterval ) );
 				//ImageJFunctions.show( screenshot );
 			}
 		}

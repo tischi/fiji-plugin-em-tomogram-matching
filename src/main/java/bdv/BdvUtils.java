@@ -42,13 +42,22 @@ public class BdvUtils
 
 	public static void zoomToSource( Bdv bdv, int sourceId )
 	{
-		final AffineTransform3D sourceTransform = new AffineTransform3D();
-		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0 , sourceTransform );
-		final RandomAccessibleInterval< ? > rai = bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSource( 0, 0 );
-
-		final FinalInterval interval = createBoundingIntervalAfterTransformation( rai, sourceTransform );
+		final FinalInterval interval = getInterval( bdv, sourceId );
 
 		zoomToInterval( bdv, interval, 1.0 );
+	}
+
+	public static FinalInterval getInterval( Bdv bdv, int sourceId )
+	{
+		final AffineTransform3D sourceTransform = new AffineTransform3D();
+		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0 , sourceTransform );
+		final RandomAccessibleInterval< ? > rai = getRandomAccessibleInterval( bdv, sourceId );
+		return createBoundingIntervalAfterTransformation( rai, sourceTransform );
+	}
+
+	public static RandomAccessibleInterval< ? > getRandomAccessibleInterval( Bdv bdv, int sourceId )
+	{
+		return bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSource( 0, 0 );
 	}
 
 	public static void zoomToInterval( Bdv bdv, FinalInterval interval, double zoomFactor )
