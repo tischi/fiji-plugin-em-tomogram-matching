@@ -1,6 +1,6 @@
 package de.embl.cba.em.matching;
 
-import bdv.BdvHelper;
+import bdv.BdvUtils;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
@@ -12,7 +12,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
-import uihelper.UiHelper;
+import ui.UiUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -49,20 +49,31 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		final List< ConverterSetup > converterSetups = bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
 		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
 
-		for ( int i = 0; i < sources.size(); ++i )
+		for ( int sourceIndex = 0; sourceIndex < sources.size(); ++sourceIndex )
 		{
-			final String name = sources.get( i ).getSpimSource().getName();
-			final Color color = new Color( 255, 255, 255 );
-			converterSetups.get( i ).setColor( Utils.asArgbType( color ) );
-			addSourceDisplaySettingsUI( panel, name, converterSetups.get( i ), color );
+			final String name = sources.get( sourceIndex ).getSpimSource().getName();
+
+			if ( name.contains( "overview" ) )
+			{
+				Color color = Color.GRAY;
+
+				if ( name.contains( "channel 2" ) )
+				{
+					color = Color.GREEN;
+				}
+
+				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
+				addSourceDisplaySettingsUI( panel, bdv, sourceIndex, color );
+			}
+
 		}
 
 	}
 
 
 	private static void addSourceDisplaySettingsUI( JPanel panel,
-													String name,
-													ConverterSetup setup,
+													Bdv bdv,
+													int sourceIndex,
 													Color color )
 	{
 		int[] buttonDimensions = new int[]{ 50, 30 };
@@ -74,24 +85,13 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		channelPanel.setOpaque( true );
 		channelPanel.setBackground( color );
 
-		JLabel jLabel = new JLabel( name );
+		JLabel jLabel = new JLabel( bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceIndex ).getSpimSource().getName() );
 		jLabel.setHorizontalAlignment( SwingConstants.CENTER );
 
-		JButton colorButton = UiHelper.getColorButton( buttonDimensions, setup );
-
-//		JButton brightnessButton = new JButton( "B" );
-//		brightnessButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
-//		//brightnessButton.addActionListener(this);
-//
-//		JButton toggleButton = new JButton( "T" );
-//		toggleButton.setPreferredSize(new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
-//		//toggleButton.addActionListener(this);
-//
-
 		channelPanel.add( jLabel );
-		channelPanel.add( colorButton );
-//		channelPanel.add( brightnessButton );
-//		channelPanel.add( toggleButton );
+		channelPanel.add( BdvUtils.createColorButton( channelPanel, buttonDimensions, bdv, sourceIndex ) );
+		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  bdv, sourceIndex ) );
+		channelPanel.add( BdvUtils.createToggleButton( buttonDimensions,  bdv, sourceIndex ) );
 
 		panel.add( channelPanel );
 
@@ -100,7 +100,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	private void addScreenShotButton( JPanel panel )
 	{
-		final JPanel horizontalLayoutPanel = UiHelper.getHorizontalLayoutPanel();
+		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
 
 		final JButton button = new JButton( "Take screenshot" );
 
@@ -143,7 +143,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	private void addSourceZoomPanel( JPanel panel )
 	{
-		final JPanel horizontalLayoutPanel = UiHelper.getHorizontalLayoutPanel();
+		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
 
 		horizontalLayoutPanel.add( new JLabel( "Zoom to" ) );
 
@@ -158,7 +158,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				BdvHelper.zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
+				BdvUtils.zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 				Utils.updateBdv( bdv,1000 );
 			}
 		} );

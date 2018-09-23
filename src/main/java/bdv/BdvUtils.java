@@ -1,16 +1,24 @@
 package bdv;
 
+import bdv.tools.brightness.ConverterSetup;
 import bdv.util.Bdv;
+import bdv.viewer.VisibilityAndGrouping;
 import bdv.viewer.state.SourceState;
+import de.embl.cba.em.matching.Utils;
+import ij.gui.GenericDialog;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 
 import static de.embl.cba.em.matching.Transforms.createBoundingIntervalAfterTransformation;
 
-public class BdvHelper
+public class BdvUtils
 {
 	public static int getSourceId( Bdv bdv, String sourceName )
 	{
@@ -80,5 +88,77 @@ public class BdvHelper
 		affineTransform3D.translate( shiftToBdvWindowCenter );
 
 		return affineTransform3D;
+	}
+
+	public static JButton createColorButton( JPanel panel,
+											 int[] buttonDimensions,
+											 Bdv bdv,
+											 int sourceIndex )
+	{
+		JButton colorButton = new JButton( "C" );
+		colorButton.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+
+		colorButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				Color color = JColorChooser.showDialog( null, "", null );
+				bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( sourceIndex ).setColor( Utils.asArgbType( color ) );
+				panel.setBackground( color );
+			}
+		} );
+
+
+
+		return colorButton;
+	}
+
+	public static JButton createBrightnessButton( int[] buttonDimensions,
+												  Bdv bdv,
+												  int sourceIndex )
+	{
+		JButton button = new JButton( "B" );
+		button.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+
+		button.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				final ConverterSetup converterSetup = bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( sourceIndex );
+
+				GenericDialog gd = new GenericDialog( "LUT max value" );
+				gd.addNumericField( "LUT max value: ", converterSetup.getDisplayRangeMax(), 0 );
+				gd.showDialog();
+
+				if ( gd.wasCanceled() ) return;
+
+
+				converterSetup.setDisplayRange( converterSetup.getDisplayRangeMin(), ( int ) gd.getNextNumber() );
+			}
+		} );
+
+		return button;
+	}
+
+	public static JButton createToggleButton( int[] buttonDimensions,
+											  Bdv bdv,
+											  int sourceIndex )
+	{
+		JButton button = new JButton( "T" );
+		button.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+
+		button.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				final VisibilityAndGrouping visibilityAndGrouping = bdv.getBdvHandle().getViewerPanel().getVisibilityAndGrouping();
+				visibilityAndGrouping.setSourceActive( sourceIndex , ! visibilityAndGrouping.isSourceActive( sourceIndex ) );
+			}
+		} );
+
+		return button;
 	}
 }
