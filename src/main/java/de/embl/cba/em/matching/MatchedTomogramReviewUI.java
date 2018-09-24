@@ -4,14 +4,17 @@ import bdv.BdvUtils;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
+import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.FinalRealInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.realtransform.AffineTransform2D;
-import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.RealRandomAccessible;
+import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.realtransform.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.IntervalView;
+import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 import ui.UiUtils;
 
@@ -103,7 +106,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	{
 		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
 
-		final JButton button = new JButton( "Take screenshot (not working..)" );
+		final JButton button = new JButton( "Take screenshot" );
 
 		button.addActionListener( new ActionListener()
 		{
@@ -121,14 +124,13 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 	public void takeScreenShot( Bdv bdv )
 	{
-
 		int n = bdv.getBdvHandle().getViewerPanel().getState().getSources().size();
-		// TODO: loop through Bdv
+
+		final ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
+
 		for ( int sourceIndex = 0; sourceIndex < n; ++sourceIndex )
 		{
 			final FinalInterval interval = BdvUtils.getInterval( bdv, sourceIndex );
-
-			final RandomAccessibleInterval< ? > rai = BdvUtils.getRandomAccessibleInterval( bdv, sourceIndex );
 
 			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
 
@@ -136,10 +138,20 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 			if ( intersecting )
 			{
-				final IntervalView< ? > screenshot = Views.interval( rai, Utils.asInterval( viewerInterval ) );
-				//ImageJFunctions.show( screenshot );
+				RealRandomAccessible< T > realRandomAccessible = ( RealRandomAccessible ) BdvUtils.getRealRandomAccessible( bdv, sourceIndex );
+				final AffineTransform3D sourceTransform = BdvUtils.getSourceTransform( bdv, sourceIndex );
+				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
+				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
+
+				// TODO: what is the final resolution of the raster??
+				final VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
+				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
+				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
 			}
+
 		}
+
+		ImageJFunctions.show( Views.stack( randomAccessibleIntervals ) );
 
 	}
 

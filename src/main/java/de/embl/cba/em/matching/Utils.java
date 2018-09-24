@@ -21,6 +21,7 @@ import net.imglib2.*;
 import net.imglib2.Cursor;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.cache.img.SingleCellArrayImg;
+import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
@@ -73,6 +74,25 @@ public class Utils
 		IJ.log( "[DEBUG] " + msg );
 	}
 
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > rai )
+	{
+
+		RandomAccessibleInterval< T > copy = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
+		copy = Transforms.getWithAdjustedOrigin( rai, copy );
+
+		final Cursor< T > out = Views.iterable( copy ).localizingCursor();
+		final RandomAccess< T > in = rai.randomAccess();
+
+		while( out.hasNext() )
+		{
+			out.fwd();
+			in.setPosition( out );
+			out.get().set( in.get() );
+		}
+
+		return copy;
+	}
 
 	public static ARGBType asArgbType( Color color )
 	{

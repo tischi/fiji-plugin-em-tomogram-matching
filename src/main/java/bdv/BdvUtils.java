@@ -2,12 +2,15 @@ package bdv;
 
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.Bdv;
+import bdv.viewer.Interpolation;
 import bdv.viewer.VisibilityAndGrouping;
 import bdv.viewer.state.SourceState;
 import de.embl.cba.em.matching.Utils;
 import ij.gui.GenericDialog;
+import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealRandomAccessible;
 import net.imglib2.realtransform.AffineTransform3D;
 
 import javax.swing.*;
@@ -47,17 +50,33 @@ public class BdvUtils
 		zoomToInterval( bdv, interval, 1.0 );
 	}
 
+	public static VoxelDimensions getVoxelDimensions( Bdv bdv, int sourceId )
+	{
+		return bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getVoxelDimensions();
+	}
+
 	public static FinalInterval getInterval( Bdv bdv, int sourceId )
+	{
+		final AffineTransform3D sourceTransform = getSourceTransform( bdv, sourceId );
+		final RandomAccessibleInterval< ? > rai = getRandomAccessibleInterval( bdv, sourceId );
+		return createBoundingIntervalAfterTransformation( rai, sourceTransform );
+	}
+
+	public static AffineTransform3D getSourceTransform( Bdv bdv, int sourceId )
 	{
 		final AffineTransform3D sourceTransform = new AffineTransform3D();
 		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0 , sourceTransform );
-		final RandomAccessibleInterval< ? > rai = getRandomAccessibleInterval( bdv, sourceId );
-		return createBoundingIntervalAfterTransformation( rai, sourceTransform );
+		return sourceTransform;
 	}
 
 	public static RandomAccessibleInterval< ? > getRandomAccessibleInterval( Bdv bdv, int sourceId )
 	{
 		return bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSource( 0, 0 );
+	}
+
+	public static RealRandomAccessible< ? > getRealRandomAccessible( Bdv bdv, int sourceId )
+	{
+		return bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getInterpolatedSource( 0, 0, Interpolation.NLINEAR );
 	}
 
 	public static void zoomToInterval( Bdv bdv, FinalInterval interval, double zoomFactor )
