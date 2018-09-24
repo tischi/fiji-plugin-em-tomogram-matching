@@ -4,6 +4,8 @@ import bdv.BdvUtils;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
+import ij.IJ;
+import ij.ImagePlus;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.FinalRealInterval;
@@ -143,15 +145,18 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
 				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
 
-				// TODO: what is the final resolution of the raster??
-				final VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
+				//voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
 				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
 				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
 			}
 
 		}
 
-		ImageJFunctions.show( Views.stack( randomAccessibleIntervals ) );
+		// TODO: change colors
+		final ImagePlus imp = ImageJFunctions.show( Views.stack( randomAccessibleIntervals ) );
+
+		VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, 0 );;
+		IJ.run(imp, "Properties...", "unit=" + voxelDimensions.unit() );
 
 	}
 
