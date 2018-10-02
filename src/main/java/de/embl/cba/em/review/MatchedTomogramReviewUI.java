@@ -1,24 +1,14 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.review;
 
-import bdv.BdvUtils;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
-import ij.IJ;
-import ij.ImagePlus;
-import mpicbg.spim.data.sequence.VoxelDimensions;
-import net.imglib2.FinalInterval;
-import net.imglib2.FinalRealInterval;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealRandomAccessible;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.realtransform.*;
+import de.embl.cba.em.bdv.BdvUtils;
+import de.embl.cba.em.bdv.ImageSource;
+import de.embl.cba.em.Utils;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.IntervalView;
-import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
-import net.imglib2.view.Views;
-import ui.UiUtils;
+import de.embl.cba.em.UiUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -46,7 +36,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	{
 		addSourceZoomPanel( this );
 		addOverviewImageUI( this );
-		addScreenShotButton( this );
+		addCaptureCurrentViewButton( this );
 		createAndShowUI();
 	}
 
@@ -104,60 +94,24 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	}
 
 
-	private void addScreenShotButton( JPanel panel )
+	private void addCaptureCurrentViewButton( JPanel panel )
 	{
 		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
 
-		final JButton button = new JButton( "Take screenshot" );
+		final JButton button = new JButton( "Capture current view" );
 
 		button.addActionListener( new ActionListener()
 		{
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				takeScreenShot( bdv );
+				BdvUtils.captureCurrentView( bdv );
 			}
 		} );
 
 		horizontalLayoutPanel.add( button );
 
 		panel.add( horizontalLayoutPanel );
-	}
-
-	public void takeScreenShot( Bdv bdv )
-	{
-		int n = bdv.getBdvHandle().getViewerPanel().getState().getSources().size();
-
-		final ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
-
-		for ( int sourceIndex = 0; sourceIndex < n; ++sourceIndex )
-		{
-			final FinalInterval interval = BdvUtils.getInterval( bdv, sourceIndex );
-
-			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
-
-			final boolean intersecting = Utils.intersecting( interval, viewerInterval );
-
-			if ( intersecting )
-			{
-				RealRandomAccessible< T > realRandomAccessible = ( RealRandomAccessible ) BdvUtils.getRealRandomAccessible( bdv, sourceIndex );
-				final AffineTransform3D sourceTransform = BdvUtils.getSourceTransform( bdv, sourceIndex );
-				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
-				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
-
-				//voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
-				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
-				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
-			}
-
-		}
-
-		// TODO: change colors
-		final ImagePlus imp = ImageJFunctions.show( Views.stack( randomAccessibleIntervals ) );
-
-		VoxelDimensions voxelDimensions = BdvUtils.getVoxelDimensions( bdv, 0 );;
-		IJ.run(imp, "Properties...", "unit=" + voxelDimensions.unit() );
-
 	}
 
 	private void addSourceZoomPanel( JPanel panel )

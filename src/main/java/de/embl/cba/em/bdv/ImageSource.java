@@ -1,17 +1,14 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.bdv;
 
 import bdv.util.BdvSource;
-import bdv.util.BdvStackSource;
 import mpicbg.spim.data.SpimData;
-import mpicbg.spim.data.sequence.ViewSetup;
-import net.imglib2.Dimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
 
 import java.io.File;
 
-import static de.embl.cba.em.matching.Transforms.createBoundingIntervalAfterTransformation;
+import static de.embl.cba.em.imageprocessing.Transforms.createBoundingIntervalAfterTransformation;
 
 public class ImageSource
 {

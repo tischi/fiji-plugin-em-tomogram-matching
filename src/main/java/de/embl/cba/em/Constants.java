@@ -1,4 +1,4 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em;
 
 public class Constants
 {

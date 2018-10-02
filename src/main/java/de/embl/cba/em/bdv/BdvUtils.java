@@ -1,25 +1,35 @@
-package bdv;
+package de.embl.cba.em.bdv;
 
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.Bdv;
 import bdv.viewer.Interpolation;
 import bdv.viewer.VisibilityAndGrouping;
 import bdv.viewer.state.SourceState;
-import de.embl.cba.em.matching.Utils;
+import de.embl.cba.em.Utils;
+import ij.IJ;
+import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.FinalInterval;
+import net.imglib2.FinalRealInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.realtransform.RealViews;
+import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
+import net.imglib2.view.Views;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 
-import static de.embl.cba.em.matching.Transforms.createBoundingIntervalAfterTransformation;
+import static de.embl.cba.em.imageprocessing.Transforms.createBoundingIntervalAfterTransformation;
 
 public class BdvUtils
 {
@@ -188,5 +198,42 @@ public class BdvUtils
 		} );
 
 		return button;
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > void captureCurrentView( Bdv bdv )
+	{
+		int n = bdv.getBdvHandle().getViewerPanel().getState().getSources().size();
+
+		final ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
+
+		for ( int sourceIndex = 0; sourceIndex < n; ++sourceIndex )
+		{
+			final FinalInterval interval = getInterval( bdv, sourceIndex );
+
+			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
+
+			final boolean intersecting = Utils.intersecting( interval, viewerInterval );
+
+			if ( intersecting )
+			{
+				RealRandomAccessible< T > realRandomAccessible = ( RealRandomAccessible ) getRealRandomAccessible( bdv, sourceIndex );
+				final AffineTransform3D sourceTransform = getSourceTransform( bdv, sourceIndex );
+				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
+				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
+
+				//voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
+				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
+				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
+			}
+
+		}
+
+		// TODO: change colors
+		final ImagePlus imp = ImageJFunctions.show( Views.stack( randomAccessibleIntervals ) );
+
+		VoxelDimensions voxelDimensions = getVoxelDimensions( bdv, 0 );;
+
+		IJ.run(imp, "Properties...", "unit=" + voxelDimensions.unit() );
+
 	}
 }

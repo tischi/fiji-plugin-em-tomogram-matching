@@ -1,30 +1,19 @@
 package de.embl.cba.em.matching;
 
-import bdv.util.*;
+import de.embl.cba.em.Utils;
 import ij.ImagePlus;
-import ij.io.FileSaver;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
-import net.imglib2.FinalInterval;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealPoint;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.util.Intervals;
-import net.imglib2.view.IntervalView;
-import net.imglib2.view.Views;
 import org.scijava.app.StatusService;
 import org.scijava.command.Command;
 import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.ui.UIService;
-import org.scijava.widget.FileWidget;
 
 import java.io.File;
-import java.util.ArrayList;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram matching" )
 public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > implements Command

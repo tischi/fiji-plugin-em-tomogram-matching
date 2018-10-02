@@ -9,7 +9,7 @@ public class MatchedTomogramReviewCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( de.embl.cba.em.matching.MatchedTomogramReviewCommand.class, true );
+		ij.command().run( de.embl.cba.em.review.MatchedTomogramReviewCommand.class, true );
 	}
 
 }

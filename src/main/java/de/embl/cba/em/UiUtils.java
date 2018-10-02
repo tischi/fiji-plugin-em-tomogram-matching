@@ -1,13 +1,6 @@
-package ui;
-
-import bdv.tools.brightness.ConverterSetup;
-import de.embl.cba.em.matching.Utils;
-import ij.gui.GenericDialog;
+package de.embl.cba.em;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class UiUtils
 {

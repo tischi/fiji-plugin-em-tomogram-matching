@@ -1,6 +1,6 @@
-import de.embl.cba.em.matching.Algorithms;
-import de.embl.cba.em.matching.Projection;
-import de.embl.cba.em.matching.Transforms;
+import de.embl.cba.em.imageprocessing.Algorithms;
+import de.embl.cba.em.imageprocessing.Projection;
+import de.embl.cba.em.imageprocessing.Transforms;
 import ij.*;
 
 import net.imagej.ImageJ;

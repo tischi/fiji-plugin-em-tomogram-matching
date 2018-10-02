@@ -1,11 +1,15 @@
 package de.embl.cba.em.matching;
 
+import de.embl.cba.em.imageprocessing.Algorithms;
+import de.embl.cba.em.imageprocessing.Projection;
+import de.embl.cba.em.imageprocessing.Transforms;
+import de.embl.cba.em.Utils;
+import de.embl.cba.em.bdv.BdvExport;
 import ij.ImagePlus;
 import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
@@ -17,8 +21,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static de.embl.cba.em.matching.Utils.asFloatProcessor;
-import static de.embl.cba.em.matching.Utils.showIntermediateResult;
+import static de.embl.cba.em.Utils.asFloatProcessor;
+import static de.embl.cba.em.Utils.showIntermediateResult;
 
 public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 {

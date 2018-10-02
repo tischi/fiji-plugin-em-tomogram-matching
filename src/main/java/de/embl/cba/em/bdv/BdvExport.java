@@ -1,9 +1,8 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.bdv;
 
 import bdv.export.*;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;
 import bdv.ij.util.PluginHelper;
-import bdv.ij.util.ProgressWriterIJ;
 import bdv.img.hdf5.Hdf5ImageLoader;
 import bdv.img.hdf5.Partition;
 import bdv.spimdata.SequenceDescriptionMinimal;

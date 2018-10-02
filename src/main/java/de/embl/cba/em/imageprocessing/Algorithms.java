@@ -1,4 +1,4 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.imageprocessing;
 
 import net.imglib2.*;
 import net.imglib2.algorithm.gauss3.Gauss3;

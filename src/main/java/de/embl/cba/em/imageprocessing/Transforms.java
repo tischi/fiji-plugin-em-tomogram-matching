@@ -1,4 +1,4 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.imageprocessing;
 
 import net.imglib2.*;
 import net.imglib2.concatenate.Concatenable;
@@ -9,15 +9,13 @@ import net.imglib2.realtransform.*;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.util.Intervals;
-import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static de.embl.cba.em.matching.Constants.XYZ;
+import static de.embl.cba.em.Constants.XYZ;
 
 public abstract class Transforms< T extends InvertibleRealTransform & Concatenable< T > & PreConcatenable< T > >
 {
