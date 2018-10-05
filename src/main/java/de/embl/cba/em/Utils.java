@@ -533,6 +533,34 @@ public class Utils
 	}
 
 
+	public static double getNanometerPixelWidth( File file )
+	{
+		Utils.log( "Reading voxel size from " + file.getName() );
+
+		if ( file.getName().contains( ".tif" ) )
+		{
+			final ImagePlus imagePlus = IJ.openVirtual( file.getAbsolutePath() );
+			double pixelWidth = imagePlus.getCalibration().pixelWidth;
+			String unit = imagePlus.getCalibration().getUnit();
+
+			double voxelSize = asNanometers( pixelWidth, unit );
+
+			if ( voxelSize == -1 )
+			{
+				Utils.error( "Could not interpret calibration unit of " + file.getName() +
+						"; unit found was: " + unit );
+			}
+
+			return pixelWidth;
+		}
+		else
+		{
+			return getNanometerPixelWidthUsingBF( file );
+		}
+
+	}
+
+
 	public static double getNanometerPixelWidthUsingBF( File file )
 	{
 		Utils.log( "Reading voxel size from " + file.getName() );
@@ -554,30 +582,16 @@ public class Utils
 			reader.setSeries(0);
 
 			String unit = meta.getPixelsPhysicalSizeX( 0 ).unit().getSymbol();
+			final double value = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue();
 
-			double voxelSize = -1;
-
-			if ( unit != null )
-			{
-				if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
-				{
-					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() * 1D;
-				}
-				else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
-				{
-					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() * 1000D;
-				}
-				else if ( unit.hashCode() == 197 || unit.equals( "Angstrom") )
-				{
-					voxelSize = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue() / 10D;
-				}
-			}
+			double voxelSize = asNanometers( value, unit );
 
 			if ( voxelSize == -1 )
 			{
 				Utils.error( "Could not interpret calibration unit of " + file.getName() +
 						"; unit found was: " + unit );
 			}
+
 
 			Utils.log("Voxel size [nm]: " + voxelSize );
 			return voxelSize;
@@ -589,6 +603,29 @@ public class Utils
 		}
 
 		return 0.0;
+	}
+
+	public static double asNanometers( double value, String unit )
+	{
+		double voxelSize = -1;
+
+		if ( unit != null )
+		{
+			if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
+			{
+				voxelSize = value * 1D;
+			}
+			else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
+			{
+				voxelSize = value * 1000D;
+			}
+			else if ( unit.hashCode() == 197 || unit.equals( "Angstrom") )
+			{
+				voxelSize = value / 10D;
+			}
+		}
+
+		return voxelSize;
 	}
 
 	private static void error( String s )

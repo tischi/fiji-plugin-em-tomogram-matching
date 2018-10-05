@@ -1,7 +1,9 @@
 package de.embl.cba.em.bdv;
 
 import bdv.tools.brightness.ConverterSetup;
+import bdv.tools.brightness.SliderPanelDouble;
 import bdv.util.Bdv;
+import bdv.util.BoundedValueDouble;
 import bdv.viewer.Interpolation;
 import bdv.viewer.VisibilityAndGrouping;
 import bdv.viewer.state.SourceState;
@@ -48,6 +50,11 @@ public class BdvUtils
 		return sourceId;
 	}
 
+	public static String getName( Bdv bdv, int sourceId )
+	{
+		return bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getName();
+	}
+
 	public static void zoomToSource( Bdv bdv, String sourceName )
 	{
 		zoomToSource( bdv, getSourceId( bdv, sourceName ) );
@@ -78,6 +85,7 @@ public class BdvUtils
 		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0 , sourceTransform );
 		return sourceTransform;
 	}
+
 
 	public static RandomAccessibleInterval< ? > getRandomAccessibleInterval( Bdv bdv, int sourceId )
 	{
@@ -166,18 +174,51 @@ public class BdvUtils
 			{
 				final ConverterSetup converterSetup = bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( sourceIndex );
 
-				GenericDialog gd = new GenericDialog( "LUT max value" );
-				gd.addNumericField( "LUT max value: ", converterSetup.getDisplayRangeMax(), 0 );
-				gd.showDialog();
-
-				if ( gd.wasCanceled() ) return;
-
-
-				converterSetup.setDisplayRange( converterSetup.getDisplayRangeMin(), ( int ) gd.getNextNumber() );
+				showBrightnessDialog( BdvUtils.getName( bdv, sourceIndex ), converterSetup );
 			}
 		} );
 
 		return button;
+	}
+
+
+
+	public static void showBrightnessDialog( String name, ConverterSetup converterSetup )
+	{
+		JFrame frame = new JFrame( name );
+		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+
+		final BoundedValueDouble min = new BoundedValueDouble( 0, 65535, ( int ) converterSetup.getDisplayRangeMin());
+		final BoundedValueDouble max = new BoundedValueDouble( 0, 65535, ( int ) converterSetup.getDisplayRangeMax() );
+
+		JPanel panel = new JPanel();
+		panel.setLayout( new BoxLayout( panel, BoxLayout.PAGE_AXIS ) );
+		final SliderPanelDouble minSlider = new SliderPanelDouble( "Min", min, 1 );
+		final SliderPanelDouble maxSlider = new SliderPanelDouble( "Max", max, 1 );
+
+		final BrightnessUpdateListener brightnessUpdateListener
+				= new BrightnessUpdateListener( min, max, converterSetup );
+
+		min.setUpdateListener( brightnessUpdateListener );
+		max.setUpdateListener( brightnessUpdateListener );
+
+		panel.add( minSlider );
+		panel.add( maxSlider );
+
+		frame.setContentPane( panel );
+
+		//Display the window.
+		frame.pack();
+		frame.setVisible( true );
+
+	}
+
+	public static void showGenericBrightnessDialog( ConverterSetup converterSetup )
+	{
+		GenericDialog gd = new GenericDialog( "LUT max value" );
+		gd.addNumericField( "LUT max value: ", converterSetup.getDisplayRangeMax(), 0 );
+		gd.showDialog();
+		converterSetup.setDisplayRange( converterSetup.getDisplayRangeMin(), ( int ) gd.getNextNumber() );
 	}
 
 	public static JButton createToggleButton( int[] buttonDimensions,
@@ -220,8 +261,6 @@ public class BdvUtils
 				final AffineTransform3D sourceTransform = getSourceTransform( bdv, sourceIndex );
 				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
 				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
-
-				//voxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
 				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
 				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
 			}

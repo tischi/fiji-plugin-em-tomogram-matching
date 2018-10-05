@@ -5,6 +5,7 @@ import de.embl.cba.em.imageprocessing.Projection;
 import de.embl.cba.em.imageprocessing.Transforms;
 import de.embl.cba.em.Utils;
 import de.embl.cba.em.bdv.BdvExport;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
@@ -52,6 +53,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		if ( settings.saveResults ) saveOverviewAsBdv();
 		createTomogramFileList();
 		computeAndSaveRegisteredTomograms();
+		IJ.showMessage( "Tomogram matching is done! Please use Tomogram Review to view the results." );
 	}
 
 	private void createTomogramFileList()
@@ -85,7 +87,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private void openOverview()
 	{
 		overview = Utils.openImage( settings.overviewImage );
-		settings.overviewImageCalibrationNanometer = Utils.getNanometerPixelWidthUsingBF( settings.overviewImage );
+		settings.overviewImageCalibrationNanometer = Utils.getNanometerPixelWidth( settings.overviewImage );
 
 		// rotate
 		if ( overview.numDimensions() == 2 )
@@ -196,7 +198,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
 	{
-		settings.tomogramCalibrationNanometer = Utils.getNanometerPixelWidthUsingBF( tomogramFile );
+		settings.tomogramCalibrationNanometer = Utils.getNanometerPixelWidth( tomogramFile );
 		return Utils.openImage( tomogramFile );
 	}
 
@@ -221,28 +223,23 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void saveTomogramAsBdv( RandomAccessibleInterval< T > tomogram, double[] offset, File tomogramFile )
 	{
-		(new Thread(new Runnable()
-		{
-			public void run()
-			{
-				Utils.log( "Saving matched " + tomogramFile.getName() + " ..." );
 
-				final IntervalView< T > tomogramWithImpDimensionOrder = Views.permute(
-						Views.addDimension( tomogram, 0, 0 ),
-						2, 3 );
+		Utils.log( "Saving matched " + tomogramFile.getName() + " ..." );
 
-				final ImagePlus imagePlus = Utils.asImagePlus( tomogramWithImpDimensionOrder );
+		final IntervalView< T > tomogramWithImpDimensionOrder = Views.permute(
+				Views.addDimension( tomogram, 0, 0 ),
+				2, 3 );
 
-				imagePlus.setTitle( tomogramFile.getName().split( "\\." )[ 0 ] );
+		final ImagePlus imagePlus = Utils.asImagePlus( tomogramWithImpDimensionOrder );
 
-				BdvExport.export(
-						imagePlus,
-						settings.outputDirectory + File.separator + tomogramFile.getName(),
-						getTomogramCalibration(),
-						"nanometer",
-						offset );
-			}
-		})).start();
+		imagePlus.setTitle( tomogramFile.getName().split( "\\." )[ 0 ] );
+
+		BdvExport.export(
+				imagePlus,
+				settings.outputDirectory + File.separator + tomogramFile.getName(),
+				getTomogramCalibration(),
+				"nanometer",
+				offset );
 
 	}
 

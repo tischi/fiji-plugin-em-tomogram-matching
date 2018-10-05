@@ -164,7 +164,6 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	 */
 	private void createAndShowUI( )
 	{
-		//Create and set up the window.
 		frame = new JFrame( "Multiposition viewer" );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
