@@ -40,9 +40,9 @@ public class BdvUtils
 		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
 
 		int sourceId = -1;
-		for ( int i = 0;  i < sources.size(); ++i )
+		for ( int i = 0; i < sources.size(); ++i )
 		{
-			if ( sources.get(i ).getSpimSource().getName().equals( sourceName ) )
+			if ( sources.get( i ).getSpimSource().getName().equals( sourceName ) )
 			{
 				sourceId = i;
 			}
@@ -82,7 +82,7 @@ public class BdvUtils
 	public static AffineTransform3D getSourceTransform( Bdv bdv, int sourceId )
 	{
 		final AffineTransform3D sourceTransform = new AffineTransform3D();
-		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0 , sourceTransform );
+		bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceId ).getSpimSource().getSourceTransform( 0, 0, sourceTransform );
 		return sourceTransform;
 	}
 
@@ -111,9 +111,9 @@ public class BdvUtils
 
 		double[] shiftToImage = new double[ 3 ];
 
-		for( int d = 0; d < 3; ++d )
+		for ( int d = 0; d < 3; ++d )
 		{
-			shiftToImage[ d ] = - ( interval.min( d ) + interval.dimension( d ) / 2.0 ) ;
+			shiftToImage[ d ] = -( interval.min( d ) + interval.dimension( d ) / 2.0 );
 		}
 
 		affineTransform3D.translate( shiftToImage );
@@ -122,11 +122,11 @@ public class BdvUtils
 		bdvWindowDimensions[ 0 ] = bdv.getBdvHandle().getViewerPanel().getWidth();
 		bdvWindowDimensions[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
 
-		affineTransform3D.scale(  zoomFactor * bdvWindowDimensions[ 0 ] / interval.dimension( 0 ) );
+		affineTransform3D.scale( zoomFactor * bdvWindowDimensions[ 0 ] / interval.dimension( 0 ) );
 
 		double[] shiftToBdvWindowCenter = new double[ 3 ];
 
-		for( int d = 0; d < 2; ++d )
+		for ( int d = 0; d < 2; ++d )
 		{
 			shiftToBdvWindowCenter[ d ] += bdvWindowDimensions[ d ] / 2.0;
 		}
@@ -139,10 +139,10 @@ public class BdvUtils
 	public static JButton createColorButton( JPanel panel,
 											 int[] buttonDimensions,
 											 Bdv bdv,
-											 int sourceIndex )
+											 ArrayList< Integer > sourceIndices )
 	{
 		JButton colorButton = new JButton( "C" );
-		colorButton.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		colorButton.setPreferredSize( new Dimension( buttonDimensions[ 0 ], buttonDimensions[ 1 ] ) );
 
 		colorButton.addActionListener( new ActionListener()
 		{
@@ -150,11 +150,15 @@ public class BdvUtils
 			public void actionPerformed( ActionEvent e )
 			{
 				Color color = JColorChooser.showDialog( null, "", null );
-				bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( sourceIndex ).setColor( Utils.asArgbType( color ) );
+
+				for ( int i : sourceIndices )
+				{
+					bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( i ).setColor( Utils.asArgbType( color ) );
+				}
+
 				panel.setBackground( color );
 			}
 		} );
-
 
 
 		return colorButton;
@@ -162,19 +166,24 @@ public class BdvUtils
 
 	public static JButton createBrightnessButton( int[] buttonDimensions,
 												  Bdv bdv,
-												  int sourceIndex )
+												  ArrayList< Integer > sourceIndices )
 	{
 		JButton button = new JButton( "B" );
-		button.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		button.setPreferredSize( new Dimension( buttonDimensions[ 0 ], buttonDimensions[ 1 ] ) );
 
 		button.addActionListener( new ActionListener()
 		{
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				final ConverterSetup converterSetup = bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( sourceIndex );
+				final ArrayList< ConverterSetup > converterSetups = new ArrayList<>();
 
-				showBrightnessDialog( BdvUtils.getName( bdv, sourceIndex ), converterSetup );
+				for ( int i : sourceIndices )
+				{
+					converterSetups.add( bdv.getBdvHandle().getSetupAssignments().getConverterSetups().get( i ) );
+				}
+
+				showBrightnessDialog( "Change brightness", converterSetups );
 			}
 		} );
 
@@ -182,22 +191,23 @@ public class BdvUtils
 	}
 
 
-
-	public static void showBrightnessDialog( String name, ConverterSetup converterSetup )
+	public static void showBrightnessDialog( String name, ArrayList< ConverterSetup > converterSetups )
 	{
+
 		JFrame frame = new JFrame( name );
+
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
-		final BoundedValueDouble min = new BoundedValueDouble( 0, 65535, ( int ) converterSetup.getDisplayRangeMin());
-		final BoundedValueDouble max = new BoundedValueDouble( 0, 65535, ( int ) converterSetup.getDisplayRangeMax() );
+		final BoundedValueDouble min = new BoundedValueDouble( 0, 65535, ( int ) converterSetups.get(0).getDisplayRangeMin() );
+		final BoundedValueDouble max = new BoundedValueDouble( 0, 65535, ( int ) converterSetups.get(0).getDisplayRangeMax() );
 
 		JPanel panel = new JPanel();
 		panel.setLayout( new BoxLayout( panel, BoxLayout.PAGE_AXIS ) );
 		final SliderPanelDouble minSlider = new SliderPanelDouble( "Min", min, 1 );
 		final SliderPanelDouble maxSlider = new SliderPanelDouble( "Max", max, 1 );
 
-		final BrightnessUpdateListener brightnessUpdateListener
-				= new BrightnessUpdateListener( min, max, converterSetup );
+		final BrightnessUpdateListener brightnessUpdateListener =
+				new BrightnessUpdateListener( min, max, converterSetups );
 
 		min.setUpdateListener( brightnessUpdateListener );
 		max.setUpdateListener( brightnessUpdateListener );
@@ -208,6 +218,9 @@ public class BdvUtils
 		frame.setContentPane( panel );
 
 		//Display the window.
+		frame.setBounds( MouseInfo.getPointerInfo().getLocation().x,
+				MouseInfo.getPointerInfo().getLocation().y,
+				120, 10);
 		frame.pack();
 		frame.setVisible( true );
 
@@ -223,10 +236,10 @@ public class BdvUtils
 
 	public static JButton createToggleButton( int[] buttonDimensions,
 											  Bdv bdv,
-											  int sourceIndex )
+											  ArrayList< Integer > sourceIndices )
 	{
 		JButton button = new JButton( "T" );
-		button.setPreferredSize( new Dimension( buttonDimensions[0], buttonDimensions[1] ) );
+		button.setPreferredSize( new Dimension( buttonDimensions[ 0 ], buttonDimensions[ 1 ] ) );
 
 		button.addActionListener( new ActionListener()
 		{
@@ -234,15 +247,52 @@ public class BdvUtils
 			public void actionPerformed( ActionEvent e )
 			{
 				final VisibilityAndGrouping visibilityAndGrouping = bdv.getBdvHandle().getViewerPanel().getVisibilityAndGrouping();
-				visibilityAndGrouping.setSourceActive( sourceIndex , ! visibilityAndGrouping.isSourceActive( sourceIndex ) );
+				for ( int i : sourceIndices )
+				{
+					visibilityAndGrouping.setSourceActive( i, !visibilityAndGrouping.isSourceActive( i ) );
+				}
 			}
 		} );
 
 		return button;
 	}
 
+	public static < T extends RealType< T > & NativeType< T > > void captureScreenshot( Bdv bdv )
+	{
+
+	}
+
+	public static < T extends RealType< T > & NativeType< T > > void captureCurrentView2( Bdv bdv )
+	{
+		//	inal MultiResolutionRenderer renderer = new MultiResolutionRenderer(
+		//		target, new PainterThread( null ), new double[] { 1 }, 0, false, 1, null, false,
+		//		viewer.getOptionValues().getAccumulateProjectorFactory(), new CacheControl.Dummy() );
+		//		progressWriter.setProgress( 0 );
+		//		for ( int timepoint = minTimepointIndex; timepoint <= maxTimepointIndex; ++timepoint )
+		//	{
+		//		renderState.setCurrentTimepoint( timepoint );
+		//		renderer.requestRepaint();
+		//		renderer.paint( renderState );
+		//
+		//		if ( Prefs.showScaleBarInMovie() )
+		//		{
+		//			final Graphics2D g2 = target.bi.createGraphics();
+		//			g2.setClip( 0, 0, width, height );
+		//			scalebar.setViewerState( renderState );
+		//			scalebar.paint( g2 );
+		//		}
+		//
+		//		ImageIO.write( target.bi, "png", new File( String.format( "%s/img-%03d.png", dir, timepoint ) ) );
+		//		progressWriter.setProgress( ( double ) (timepoint - minTimepointIndex + 1) / (maxTimepointIndex - minTimepointIndex + 1) );
+		//	}
+		//
+	}
+
+
 	public static < T extends RealType< T > & NativeType< T > > void captureCurrentView( Bdv bdv )
 	{
+		// TODO: add resolution
+
 		int n = bdv.getBdvHandle().getViewerPanel().getState().getSources().size();
 
 		final ArrayList< RandomAccessibleInterval< T > > randomAccessibleIntervals = new ArrayList<>();
@@ -251,9 +301,9 @@ public class BdvUtils
 		{
 			final FinalInterval interval = getInterval( bdv, sourceIndex );
 
-			final FinalRealInterval viewerInterval = Utils.getCurrentViewerInterval( bdv );
+			final FinalRealInterval viewerRealInterval = Utils.getCurrentViewerInterval( bdv );
 
-			final boolean intersecting = Utils.intersecting( interval, viewerInterval );
+			final boolean intersecting = Utils.intersecting( interval, viewerRealInterval );
 
 			if ( intersecting )
 			{
@@ -261,7 +311,7 @@ public class BdvUtils
 				final AffineTransform3D sourceTransform = getSourceTransform( bdv, sourceIndex );
 				realRandomAccessible = RealViews.transform( realRandomAccessible, sourceTransform );
 				final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( realRandomAccessible );
-				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerInterval ) );
+				final RandomAccessibleInterval< T > screenshot = Views.interval( raster, Utils.asInterval( viewerRealInterval ) );
 				randomAccessibleIntervals.add( Utils.copyAsArrayImg( screenshot ) );
 			}
 

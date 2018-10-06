@@ -6,6 +6,7 @@ import bdv.viewer.state.SourceState;
 import de.embl.cba.em.bdv.BdvUtils;
 import de.embl.cba.em.bdv.ImageSource;
 import de.embl.cba.em.Utils;
+import net.imglib2.ops.parse.token.Int;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import de.embl.cba.em.UiUtils;
@@ -45,6 +46,9 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		final List< ConverterSetup > converterSetups = bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
 		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
 
+
+		ArrayList< Integer > tomogramSourceIndices = new ArrayList<>(  );
+
 		for ( int sourceIndex = 0; sourceIndex < sources.size(); ++sourceIndex )
 		{
 			final String name = sources.get( sourceIndex ).getSpimSource().getName();
@@ -53,24 +57,36 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			{
 				Color color = Color.GRAY;
 
-				if ( name.contains( "channel 2" ) )
-				{
-					color = Color.GREEN;
-				}
+				if ( name.contains( "channel 2" ) ) color = Color.GREEN;
+				else if ( name.contains( "channel 3" ) ) color = Color.MAGENTA;
+				else if ( name.contains( "channel 4" ) ) color = Color.RED;
 
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
-				addSourceDisplaySettingsUI( panel, bdv, sourceIndex, color );
+
+				final ArrayList< Integer > indices = new ArrayList<>();
+				indices.add( sourceIndex );
+				addSourcesDisplaySettingsUI( panel, BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
+			}
+			else
+			{
+				tomogramSourceIndices.add( sourceIndex );
 			}
 
 		}
 
+		// TODO: replace the whole SourceIndices List with Tobias' Group logic?!
+
+		addSourcesDisplaySettingsUI( panel, "Tomograms", bdv, tomogramSourceIndices, Color.GRAY );
+
+
 	}
 
 
-	private static void addSourceDisplaySettingsUI( JPanel panel,
-													Bdv bdv,
-													int sourceIndex,
-													Color color )
+	private static void addSourcesDisplaySettingsUI( JPanel panel,
+													 String name,
+													 Bdv bdv,
+													 ArrayList< Integer > sourceIndexes,
+													 Color color )
 	{
 		int[] buttonDimensions = new int[]{ 50, 30 };
 
@@ -81,13 +97,13 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 		channelPanel.setOpaque( true );
 		channelPanel.setBackground( color );
 
-		JLabel jLabel = new JLabel( bdv.getBdvHandle().getViewerPanel().getState().getSources().get( sourceIndex ).getSpimSource().getName() );
+		JLabel jLabel = new JLabel( name );
 		jLabel.setHorizontalAlignment( SwingConstants.CENTER );
 
 		channelPanel.add( jLabel );
-		channelPanel.add( BdvUtils.createColorButton( channelPanel, buttonDimensions, bdv, sourceIndex ) );
-		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  bdv, sourceIndex ) );
-		channelPanel.add( BdvUtils.createToggleButton( buttonDimensions,  bdv, sourceIndex ) );
+		channelPanel.add( BdvUtils.createColorButton( channelPanel, buttonDimensions, bdv, sourceIndexes ) );
+		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  bdv, sourceIndexes ) );
+		channelPanel.add( BdvUtils.createToggleButton( buttonDimensions,  bdv, sourceIndexes ) );
 
 		panel.add( channelPanel );
 

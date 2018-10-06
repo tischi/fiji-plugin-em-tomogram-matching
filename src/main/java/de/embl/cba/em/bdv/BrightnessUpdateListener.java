@@ -3,11 +3,22 @@ package de.embl.cba.em.bdv;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.BoundedValueDouble;
 
+import java.util.ArrayList;
+
 public class BrightnessUpdateListener implements BoundedValueDouble.UpdateListener
 {
- 	final private ConverterSetup converterSetup;
+ 	final private ArrayList< ConverterSetup > converterSetups;
  	final private BoundedValueDouble min;
 	final private BoundedValueDouble max;
+
+	public BrightnessUpdateListener( BoundedValueDouble min,
+									 BoundedValueDouble max,
+									 ArrayList< ConverterSetup > converterSetups )
+	{
+		this.min = min;
+		this.max = max;
+		this.converterSetups = converterSetups;
+	}
 
 	public BrightnessUpdateListener( BoundedValueDouble min,
 									 BoundedValueDouble max,
@@ -15,13 +26,17 @@ public class BrightnessUpdateListener implements BoundedValueDouble.UpdateListen
 	{
 		this.min = min;
 		this.max = max;
-		this.converterSetup = converterSetup;
 
+		converterSetups = new ArrayList<>(  );
+		converterSetups.add( converterSetup );
 	}
 
 	@Override
 	public void update()
 	{
-		converterSetup.setDisplayRange( min.getCurrentValue(), max.getCurrentValue() );
+		for ( ConverterSetup converterSetup : converterSetups )
+		{
+			converterSetup.setDisplayRange( min.getCurrentValue(), max.getCurrentValue() );
+		}
 	}
 }
