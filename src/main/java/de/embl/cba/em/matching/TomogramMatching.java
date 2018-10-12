@@ -8,9 +8,11 @@ import de.embl.cba.em.bdv.BdvExport;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.FloatProcessor;
+import net.imagej.ImageJ;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
@@ -51,6 +53,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		openOverview();
 		if ( settings.saveResults ) saveOverviewAsBdv();
+
 		createTomogramFileList();
 		computeAndSaveRegisteredTomograms();
 		IJ.showMessage( "Tomogram matching is done! Please use Tomogram Review to view the results." );
@@ -102,6 +105,9 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 			affineTransform3D.rotate( 2, Math.toRadians( -settings.tomogramAngleDegrees ) );
 			overview = Transforms.createTransformedView( overview, affineTransform3D );
 		}
+
+		ImageJFunctions.show( Utils.copyAsArrayImg( overview ) );
+
 
 		overviewProcessor = asFloatProcessor( overview );
 

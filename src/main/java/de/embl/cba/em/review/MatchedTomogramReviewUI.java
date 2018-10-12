@@ -4,9 +4,8 @@ import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
 import de.embl.cba.em.bdv.BdvUtils;
-import de.embl.cba.em.bdv.ImageSource;
 import de.embl.cba.em.Utils;
-import net.imglib2.ops.parse.token.Int;
+import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import de.embl.cba.em.UiUtils;
@@ -22,30 +21,27 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 {
 	JFrame frame;
 	JComboBox tomogramComboBox;
-
-	private final ArrayList< ImageSource > imageSources;
 	private final Bdv bdv;
+	private VoxelDimensions tomogramVoxelDimensions;
 
 
-	public MatchedTomogramReviewUI( ArrayList< ImageSource > imageSources, Bdv bdv )
+	public MatchedTomogramReviewUI( Bdv bdv )
 	{
-		this.imageSources = imageSources;
 		this.bdv = bdv;
 	}
 
 	public void showUI()
 	{
 		addSourceZoomPanel( this );
-		addOverviewImageUI( this );
-		addCaptureCurrentViewButton( this );
+		addDisplaySettingsUI( this );
+		addCaptureViewPanel( this );
 		createAndShowUI();
 	}
 
-	private void addOverviewImageUI( JPanel panel )
+	private void addDisplaySettingsUI( JPanel panel )
 	{
 		final List< ConverterSetup > converterSetups = bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
 		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
-
 
 		ArrayList< Integer > tomogramSourceIndices = new ArrayList<>(  );
 
@@ -55,11 +51,12 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 			if ( name.contains( "overview" ) )
 			{
-				Color color = Color.GRAY;
-
-				if ( name.contains( "channel 2" ) ) color = Color.GREEN;
-				else if ( name.contains( "channel 3" ) ) color = Color.MAGENTA;
-				else if ( name.contains( "channel 4" ) ) color = Color.RED;
+				Color color;
+				if ( name.contains( "channel 1" ) ) color = Color.GRAY;
+				else if ( name.contains( "channel 2" ) ) color = Color.RED;
+				else if ( name.contains( "channel 3" ) ) color = Color.GREEN;
+				else if ( name.contains( "channel 4" ) ) color = Color.BLUE	;
+				else color = Color.MAGENTA;
 
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
 
@@ -69,6 +66,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			}
 			else
 			{
+				tomogramVoxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
 				tomogramSourceIndices.add( sourceIndex );
 			}
 
@@ -102,7 +100,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		channelPanel.add( jLabel );
 		channelPanel.add( BdvUtils.createColorButton( channelPanel, buttonDimensions, bdv, sourceIndexes ) );
-		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  bdv, sourceIndexes ) );
+		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  name, bdv, sourceIndexes ) );
 		channelPanel.add( BdvUtils.createToggleButton( buttonDimensions,  bdv, sourceIndexes ) );
 
 		panel.add( channelPanel );
@@ -110,9 +108,15 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	}
 
 
-	private void addCaptureCurrentViewButton( JPanel panel )
+	private void addCaptureViewPanel( JPanel panel )
 	{
 		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
+
+		horizontalLayoutPanel.add( new JLabel( "Resolution [nm]" ) );
+
+		final JTextField resolutionTextField = new JTextField( "" + tomogramVoxelDimensions.dimension( 0 ) );
+
+		horizontalLayoutPanel.add( resolutionTextField );
 
 		final JButton button = new JButton( "Capture current view" );
 
@@ -121,9 +125,10 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				BdvUtils.captureCurrentView( bdv );
+				BdvUtils.captureCurrentView( bdv, Double.parseDouble( resolutionTextField.getText() ) );
 			}
 		} );
+
 
 		horizontalLayoutPanel.add( button );
 
@@ -180,7 +185,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	 */
 	private void createAndShowUI( )
 	{
-		frame = new JFrame( "Multiposition viewer" );
+		frame = new JFrame( "Tomogram viewer" );
 		frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
 		//Create and set up the content pane.

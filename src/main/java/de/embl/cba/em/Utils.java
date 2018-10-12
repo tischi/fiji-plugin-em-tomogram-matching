@@ -718,4 +718,5 @@ public class Utils
 		max[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
 		return viewerTransform.estimateBounds( new FinalInterval( min, max ) );
 	}
+
 }

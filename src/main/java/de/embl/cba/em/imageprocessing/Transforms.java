@@ -4,6 +4,7 @@ import net.imglib2.*;
 import net.imglib2.concatenate.Concatenable;
 import net.imglib2.concatenate.PreConcatenable;
 import net.imglib2.interpolation.InterpolatorFactory;
+import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorFactory;
 import net.imglib2.realtransform.*;
 import net.imglib2.type.NativeType;
@@ -65,7 +66,7 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	public static < T extends NumericType< T > & NativeType< T > >
 	RandomAccessibleInterval createTransformedView( RandomAccessibleInterval< T > rai, InvertibleRealTransform transform )
 	{
-		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new NLinearInterpolatorFactory() );
+		final RandomAccessible transformedRA = createTransformedRaView( rai, transform, new ClampingNLinearInterpolatorFactory() );
 		final FinalInterval transformedInterval = createBoundingIntervalAfterTransformation( rai, transform );
 		final RandomAccessibleInterval< T > transformedIntervalView = Views.interval( transformedRA, transformedInterval );
 
@@ -85,7 +86,8 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	public static < T extends NumericType< T > >
 	RandomAccessible createTransformedRaView( RandomAccessibleInterval< T > rai, InvertibleRealTransform combinedTransform, InterpolatorFactory interpolatorFactory )
 	{
-		RealRandomAccessible rra = Views.interpolate( Views.extendZero( rai ), interpolatorFactory );
+		RealRandomAccessible rra =
+				Views.interpolate( Views.extendZero( rai ), interpolatorFactory );
 		rra = RealViews.transform( rra, combinedTransform );
 		return Views.raster( rra );
 	}
@@ -135,17 +137,34 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 	}
 
 
-	public static < T extends NumericType< T > >
-	FinalInterval createScaledInterval( RandomAccessibleInterval< T > rai, Scale scale )
+	public static FinalInterval createScaledInterval( Interval interval, Scale scale )
 	{
-		int n = rai.numDimensions();
+		int n = interval.numDimensions();
 
 		long[] min = new long[ n ];
 		long[] max = new long[ n ];
-		rai.min( min );
-		rai.max( max );
+		interval.min( min );
+		interval.max( max );
 
 		for ( int d = 0; d < n; ++d )
+		{
+			min[ d ] *= scale.getScale( d );
+			max[ d ] *= scale.getScale( d );
+		}
+
+		return new FinalInterval( min, max );
+	}
+
+	public static FinalInterval scaleIntervalInXY( Interval interval, Scale scale )
+	{
+		int n = interval.numDimensions();
+
+		long[] min = new long[ n ];
+		long[] max = new long[ n ];
+		interval.min( min );
+		interval.max( max );
+
+		for ( int d = 0; d < 2; ++d )
 		{
 			min[ d ] *= scale.getScale( d );
 			max[ d ] *= scale.getScale( d );
@@ -245,4 +264,26 @@ public abstract class Transforms< T extends InvertibleRealTransform & Concatenab
 
 		return Views.stack( transformedChannels );
 	}
+
+	public static < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > createResampledView( RandomAccessibleInterval< T > input,
+													   double[] scalingFactors )
+	{
+		// Convert to RealRandomAccessible such that we can obtain values at (infinite) non-integer coordinates
+		RealRandomAccessible< T > rra = Views.interpolate( Views.extendBorder( input ), new NLinearInterpolatorFactory<>() );
+
+		// Change scale such that we can sample from integer coordinates (for raster function below)
+		Scale scale = new Scale( scalingFactors );
+		RealRandomAccessible< T > rescaledRRA  = RealViews.transform( rra, scale );
+
+		// Create view sampled at integer coordinates
+		final RandomAccessible< T > rastered = Views.raster( rescaledRRA );
+
+		// Put an interval to make it a finite "normal" image again
+		final RandomAccessibleInterval< T > finiteRastered = Views.interval( rastered, createScaledInterval( input, scale ) );
+
+		return finiteRastered;
+	}
+
+
 }

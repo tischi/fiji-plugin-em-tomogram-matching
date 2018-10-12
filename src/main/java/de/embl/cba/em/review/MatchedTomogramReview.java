@@ -43,7 +43,7 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 
 	private void showUI()
 	{
-		final MatchedTomogramReviewUI ui = new MatchedTomogramReviewUI( imageSources, bdv );
+		final MatchedTomogramReviewUI ui = new MatchedTomogramReviewUI( bdv );
 		ui.showUI();
 	}
 
