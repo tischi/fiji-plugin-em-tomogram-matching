@@ -3,7 +3,7 @@ package de.embl.cba.em.review;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
-import de.embl.cba.em.bdv.BdvUtils;
+import de.embl.cba.bdv.utils.*;
 import de.embl.cba.em.Utils;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.type.NativeType;
@@ -16,6 +16,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
+
+import static de.embl.cba.bdv.utils.BdvUserInterfaceUtils.addSourcesDisplaySettingsUI;
+import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
 
 public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
 {
@@ -80,34 +83,6 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	}
 
 
-	private static void addSourcesDisplaySettingsUI( JPanel panel,
-													 String name,
-													 Bdv bdv,
-													 ArrayList< Integer > sourceIndexes,
-													 Color color )
-	{
-		int[] buttonDimensions = new int[]{ 50, 30 };
-
-		JPanel channelPanel = new JPanel();
-		channelPanel.setLayout( new BoxLayout( channelPanel, BoxLayout.LINE_AXIS ) );
-		channelPanel.setBorder( BorderFactory.createEmptyBorder(0,10,0,10) );
-		channelPanel.add( Box.createHorizontalGlue() );
-		channelPanel.setOpaque( true );
-		channelPanel.setBackground( color );
-
-		JLabel jLabel = new JLabel( name );
-		jLabel.setHorizontalAlignment( SwingConstants.CENTER );
-
-		channelPanel.add( jLabel );
-		channelPanel.add( BdvUtils.createColorButton( channelPanel, buttonDimensions, bdv, sourceIndexes ) );
-		channelPanel.add( BdvUtils.createBrightnessButton( buttonDimensions,  name, bdv, sourceIndexes ) );
-		channelPanel.add( BdvUtils.createToggleButton( buttonDimensions,  bdv, sourceIndexes ) );
-
-		panel.add( channelPanel );
-
-	}
-
-
 	private void addCaptureViewPanel( JPanel panel )
 	{
 		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
@@ -125,7 +100,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				BdvUtils.captureCurrentView( bdv, Double.parseDouble( resolutionTextField.getText() ) );
+				captureView( bdv, Double.parseDouble( resolutionTextField.getText() ) );
 			}
 		} );
 
@@ -152,7 +127,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				BdvUtils.zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
+				zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 				Utils.updateBdv( bdv,1000 );
 			}
 		} );

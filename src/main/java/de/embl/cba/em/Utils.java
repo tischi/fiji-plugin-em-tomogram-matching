@@ -707,16 +707,4 @@ public class Utils
 		return image;
 	}
 
-	public static FinalRealInterval getCurrentViewerInterval( Bdv bdv )
-	{
-		AffineTransform3D viewerTransform = new AffineTransform3D();
-		bdv.getBdvHandle().getViewerPanel().getState().getViewerTransform( viewerTransform );
-		viewerTransform = viewerTransform.inverse();
-		final long[] min = new long[ 3 ];
-		final long[] max = new long[ 3 ];
-		max[ 0 ] = bdv.getBdvHandle().getViewerPanel().getWidth();
-		max[ 1 ] = bdv.getBdvHandle().getViewerPanel().getHeight();
-		return viewerTransform.estimateBounds( new FinalInterval( min, max ) );
-	}
-
 }
