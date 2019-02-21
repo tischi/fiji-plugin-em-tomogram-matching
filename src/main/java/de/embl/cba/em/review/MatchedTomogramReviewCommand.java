@@ -14,7 +14,7 @@ import org.scijava.ui.UIService;
 
 import java.io.File;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram browsing" )
+@Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram Browsing" )
 public class MatchedTomogramReviewCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter

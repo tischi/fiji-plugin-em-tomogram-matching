@@ -3,7 +3,7 @@ package de.embl.cba.em;
 import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
 import bdv.util.Bdv;
-import de.embl.cba.em.imageprocessing.Transforms;
+import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -14,16 +14,16 @@ import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.meta.IMetadata;
 import loci.formats.services.OMEXMLService;
+import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 import mpicbg.spim.data.SpimData;
-import net.imglib2.*;
 import net.imglib2.Cursor;
+import net.imglib2.*;
 import net.imglib2.algorithm.labeling.ConnectedComponents;
 import net.imglib2.cache.img.SingleCellArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
@@ -46,8 +46,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import loci.plugins.BF;
 
 public class Utils
 {
@@ -110,11 +108,11 @@ public class Utils
 		return cellPos;
 	}
 
-	public static void showIntermediateResult( RandomAccessibleInterval rai )
+	public static void showIntermediateResult( RandomAccessibleInterval rai, String title )
 	{
 		if ( showIntermediateResults )
 		{
-			ImageJFunctions.show( rai );
+			ImageJFunctions.show( rai, title );
 		}
 
 	}
@@ -535,10 +533,9 @@ public class Utils
 
 	public static double getNanometerPixelWidth( File file )
 	{
-		Utils.log( "Reading voxel size from " + file.getName() );
-
 		if ( file.getName().contains( ".tif" ) )
 		{
+			Utils.log( "Reading voxel size from " + file.getName() );
 			final ImagePlus imagePlus = IJ.openVirtual( file.getAbsolutePath() );
 			double pixelWidth = imagePlus.getCalibration().pixelWidth;
 			String unit = imagePlus.getCalibration().getUnit();
@@ -547,10 +544,12 @@ public class Utils
 
 			if ( voxelSize == -1 )
 			{
-				Utils.error( "Could not interpret calibration unit of " + file.getName() +
+				Utils.error( "Could not interpret calibration unit of "
+						+ file.getName() +
 						"; unit found was: " + unit );
 			}
-
+			
+			Utils.log("Voxel size [nm]: " + voxelSize );
 			return pixelWidth;
 		}
 		else
@@ -591,7 +590,6 @@ public class Utils
 				Utils.error( "Could not interpret calibration unit of " + file.getName() +
 						"; unit found was: " + unit );
 			}
-
 
 			Utils.log("Voxel size [nm]: " + voxelSize );
 			return voxelSize;

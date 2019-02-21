@@ -8,7 +8,7 @@ import net.imglib2.realtransform.AffineTransform3D;
 
 import java.io.File;
 
-import static de.embl.cba.em.imageprocessing.Transforms.createBoundingIntervalAfterTransformation;
+import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
 
 public class ImageSource
 {

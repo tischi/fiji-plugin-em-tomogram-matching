@@ -19,7 +19,8 @@ import java.util.ArrayList;
 
 public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 {
-	public static final ARGBType OVERVIEW_EM_COLOR = new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
+	public static final ARGBType OVERVIEW_EM_COLOR =
+			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
 	private final MatchedTomogramReviewSettings settings;
 	private ArrayList< File > inputFiles;
 	private Bdv bdv;

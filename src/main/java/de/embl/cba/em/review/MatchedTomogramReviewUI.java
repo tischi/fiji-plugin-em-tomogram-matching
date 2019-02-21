@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static de.embl.cba.bdv.utils.BdvUserInterfaceUtils.addSourcesDisplaySettingsUI;
+import static de.embl.cba.bdv.utils.BdvUtils.zoomToSource;
 import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
 
 public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
@@ -122,14 +123,9 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 
 		horizontalLayoutPanel.add( tomogramComboBox );
 
-		tomogramComboBox.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
-				Utils.updateBdv( bdv,1000 );
-			}
+		tomogramComboBox.addActionListener( e -> {
+			zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
+			Utils.updateBdv( bdv,1000 );
 		} );
 
 		panel.add( horizontalLayoutPanel );

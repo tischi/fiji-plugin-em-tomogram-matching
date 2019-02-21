@@ -1,6 +1,7 @@
 package de.embl.cba.em.matching;
 
 import de.embl.cba.em.Utils;
+import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
@@ -50,6 +51,12 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	@Parameter ( style = "directory" )
 	public File outputDirectory = settings.outputDirectory;
 
+	@Parameter ( label = "Save overview image" )
+	public boolean saveOverview = settings.saveOverview;
+
+	@Parameter ( label = "Save tomogram images" )
+	public boolean saveResults = settings.saveResults;
+
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
@@ -61,8 +68,8 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 
 		matching.run();
 
-		Utils.log( "Done!" );
-
+		IJ.showMessage( "Tomogram Matching is done! " +
+				"Please use Tomogram Review to view the results." );
 	}
 
 
@@ -70,6 +77,8 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	{
 		settings.outputDirectory = outputDirectory;
 		settings.overviewImage = overviewImage;
+		settings.saveOverview = saveOverview;
+		settings.saveResults = saveResults;
 		settings.tomogramInputDirectory = tomogramInputDirectory;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
