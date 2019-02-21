@@ -118,7 +118,7 @@ public class Utils
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai )
+	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai, int fillingValue )
 	{
 
 		RandomAccessibleInterval< T > rai2D = rai;
@@ -136,7 +136,15 @@ public class Utils
 		int i = 0;
 		while( inputCursor.hasNext() )
 		{
-			floats[ i++ ] = (float) inputCursor.next().getRealDouble();
+			final float realDouble = ( float ) inputCursor.next().getRealDouble();
+			if ( realDouble != fillingValue )
+			{
+				floats[ i++ ] = realDouble;
+			}
+			else
+			{
+				i++;
+			}
 		}
 
 		final FloatProcessor floatProcessor = new FloatProcessor( w, h, floats );

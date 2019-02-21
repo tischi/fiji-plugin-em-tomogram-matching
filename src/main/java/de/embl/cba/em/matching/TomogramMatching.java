@@ -9,12 +9,19 @@ import ij.ImagePlus;
 import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
+import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealRandomAccessible;
+import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.realtransform.InvertibleRealTransform;
+import net.imglib2.realtransform.RealViews;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.IntervalView;
+import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 
 import java.io.File;
@@ -23,6 +30,8 @@ import java.util.Arrays;
 
 import static de.embl.cba.em.Utils.asFloatProcessor;
 import static de.embl.cba.em.Utils.showIntermediateResult;
+import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
+import static de.embl.cba.transforms.utils.Transforms.createTransformedRaView;
 
 public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 {
@@ -37,18 +46,20 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private ArrayList< File > tomogramFiles;
 	private FloatProcessor overviewProcessor;
 	private RandomAccessibleInterval< T > overview;
+	private final int fillingValue;
 
 	public TomogramMatching( TomogramMatchingSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
+		this.fillingValue = settings.fillingValue;
 
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
 	public void run()
 	{
-		openOverview();
+		openAndRotateOverview();
 
 		if ( settings.saveOverview ) saveOverviewAsBdv();
 
@@ -84,14 +95,14 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	private void openOverview()
+	private void openAndRotateOverview()
 	{
 
 		loadOverview();
 
 		rotateOverview();
 
-		overviewProcessor = asFloatProcessor( overview );
+		overviewProcessor = asFloatProcessor( overview, fillingValue );
 
 		if ( settings.showIntermediateResults )
 			new ImagePlus( "Rotated Overview", overviewProcessor  ).show();
@@ -113,14 +124,35 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		{
 			final AffineTransform2D affineTransform2D = new AffineTransform2D();
 			affineTransform2D.rotate( Math.toRadians( -settings.tomogramAngleDegrees ) );
-			overview = Transforms.createTransformedView( overview, affineTransform2D );
+			overview = createTransformedView( overview, affineTransform2D );
 		}
 		else if ( overview.numDimensions() == 3 )
 		{
 			final AffineTransform3D affineTransform3D = new AffineTransform3D();
 			affineTransform3D.rotate( 2, Math.toRadians( -settings.tomogramAngleDegrees ) );
-			overview = Transforms.createTransformedView( overview, affineTransform3D );
+			overview = createTransformedView( overview, affineTransform3D );
 		}
+	}
+
+	public static < T extends NumericType< T > & NativeType< T > >
+	RandomAccessibleInterval createTransformedView(
+			RandomAccessibleInterval< T > rai, InvertibleRealTransform transform )
+	{
+		RealRandomAccessible rra =
+				Views.interpolate( Views.extendBorder( rai ),
+						new ClampingNLinearInterpolatorFactory() );
+
+		rra = RealViews.transform( rra, transform );
+
+		final RandomAccessibleOnRealRandomAccessible raster = Views.raster( rra );
+
+		final FinalInterval transformedInterval =
+				createBoundingIntervalAfterTransformation( rai, transform );
+
+		final RandomAccessibleInterval< T > transformedIntervalView =
+				Views.interval( raster, transformedInterval );
+
+		return transformedIntervalView;
 	}
 
 	private void saveOverviewAsBdv()
@@ -178,16 +210,23 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		// avg projection
 		Utils.log( "Computing average projection..." );
-		final Projection projection = new Projection( tomogram, Z_DIMENSION );
-		final RandomAccessibleInterval< T > projected = projection.average();
+		RandomAccessibleInterval< T > projected;
+		if ( tomogram.numDimensions() == 3 )
+		{
+			final Projection projection = new Projection( tomogram, Z_DIMENSION );
+			projected = projection.average();
+		}
+		else
+		{
+			projected = tomogram;
+		}
 
 		showIntermediateResult( projected, "projection-" + tomogramFile.getName() );
 
 		// scale
 		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected );
-		final RandomAccessibleInterval< T > downscaled =
-				Algorithms.createDownscaledArrayImg( projected, scaling );
+		final RandomAccessibleInterval< T > downscaled = Algorithms.createDownscaledArrayImg( projected, scaling );
 
 		showIntermediateResult( downscaled, "scaled-projection-" + tomogramFile.getName() );
 
@@ -201,8 +240,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Finding position in overview image..." );
 		final double[] position = computePositionWithinOverviewImage( downscaled );
 
-		Utils.log( "Best match found at [nm]: " + position[ 0 ] + ", " + position[ 1 ] );
-		Utils.log( "Best match found at [pixels]: " +
+		Utils.log( "Best match found at (upper left corner) [nm]: " + position[ 0 ] + ", " + position[ 1 ] );
+		Utils.log( "Best match found at (upper left corner) [pixels]: " +
 				(int) ( position[ 0 ] / settings.overviewCalibrationNanometer ) + ", " +
 				(int) ( position[ 1 ] / settings.overviewCalibrationNanometer ) );
 
@@ -222,8 +261,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
-				Utils.asFloatProcessor( cropped ),
-				CV_TM_SQDIFF,
+				Utils.asFloatProcessor( cropped, -1 ),
+				NORMALIZED_CORRELATION,
 				true );
 
 		final int[] position = TemplateMatchingPlugin.findMax( correlation, 0 );

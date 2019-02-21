@@ -39,26 +39,30 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 
 	TomogramMatchingSettings settings = new TomogramMatchingSettings();
 
-	@Parameter
+	@Parameter ( label = "Overview Image" )
 	public File overviewImage = settings.overviewImage;
 
-	@Parameter ( style = "directory" )
+	@Parameter ( label = "Tomograms Directory", style = "directory" )
 	public File tomogramInputDirectory = settings.tomogramInputDirectory;
 
-	@Parameter
+	@Parameter ( label = "Angle between Overview and Tomograms" )
 	public double tomogramAngleDegrees = settings.tomogramAngleDegrees;
 
-	@Parameter ( style = "directory" )
+	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory = settings.outputDirectory;
 
-	@Parameter ( label = "Save overview image" )
+	@Parameter ( label = "Save Overview Image" )
 	public boolean saveOverview = settings.saveOverview;
 
-	@Parameter ( label = "Save tomogram images" )
+	@Parameter ( label = "Save Tomogram Images" )
 	public boolean saveResults = settings.saveResults;
 
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
+
+	@Parameter ( label = "Overview Image Filling Value" )
+	private int fillingValue = settings.fillingValue;
+
 
 	public void run()
 	{
@@ -82,6 +86,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 		settings.tomogramInputDirectory = tomogramInputDirectory;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
+		settings.fillingValue = fillingValue;
 	}
 
 

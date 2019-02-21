@@ -13,4 +13,5 @@ public class TomogramMatchingSettings
 	public boolean showIntermediateResults = false;
 	public boolean saveResults = true;
 	public boolean saveOverview = true;
+	public int fillingValue = 24674;
 }
