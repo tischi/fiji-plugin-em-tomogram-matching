@@ -60,9 +60,8 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
-	@Parameter ( label = "Overview Image Filling Value" )
-	private int fillingValue = settings.fillingValue;
-
+//	@Parameter ( label = "Overview Image Filling Value" )
+//	private int fillingValue = settings.fillingValue;
 
 	public void run()
 	{
@@ -86,7 +85,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 		settings.tomogramInputDirectory = tomogramInputDirectory;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
-		settings.fillingValue = fillingValue;
+//		settings.fillingValue = fillingValue;
 	}
 
 

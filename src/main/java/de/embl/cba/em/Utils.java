@@ -7,7 +7,10 @@ import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
+import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
+import ij.process.ImageConverter;
+import ij.process.StackConverter;
 import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
 import loci.formats.IFormatReader;
@@ -120,6 +123,7 @@ public class Utils
 	public static  < T extends RealType< T > & NativeType< T > >
 	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai, int fillingValue )
 	{
+		Utils.log( "Converting Image to FloatProcessor..." );
 
 		RandomAccessibleInterval< T > rai2D = rai;
 
@@ -150,6 +154,34 @@ public class Utils
 		final FloatProcessor floatProcessor = new FloatProcessor( w, h, floats );
 
 		return floatProcessor;
+	}
+
+	public static  < T extends RealType< T > & NativeType< T > >
+	ByteProcessor asByteProcessor( RandomAccessibleInterval< T > rai )
+	{
+		Utils.log( "Converting Image to ByteProcessor..." );
+
+		RandomAccessibleInterval< T > rai2D = rai;
+
+		if ( rai.numDimensions() == 3 )
+		{
+			rai2D = Views.hyperSlice( rai, 2, 0 );
+		}
+
+		int w = (int) rai2D.dimension( 0 );
+		int h = (int) rai2D.dimension( 1 );
+		byte[] bytes = new byte[ w * h ];
+
+		final Cursor< T > inputCursor = Views.flatIterable( rai2D ).cursor();
+		int i = 0;
+		while( inputCursor.hasNext() )
+		{
+			bytes[ i++ ] =  (byte) inputCursor.next().getRealDouble();
+		}
+
+		final ByteProcessor processor = new ByteProcessor( w, h, bytes );
+
+		return processor;
 	}
 
 
@@ -465,6 +497,36 @@ public class Utils
 		{
 			Utils.error( "Could not open file: " + file.getAbsolutePath() );
 			return null;
+		}
+
+		return ImageJFunctions.wrapReal( imp );
+	}
+
+	public static  < T extends RealType< T > & NativeType< T > >
+	RandomAccessibleInterval< T > openImageAs8Bit( File file )
+	{
+		Utils.log( "Opening " + file.getName() + "...");
+
+		ImagePlus imp = IJ.openImage( file.getAbsolutePath() );
+
+		if( imp == null )
+		{
+			imp = openImagePlusUsingBF( file );
+		}
+
+		if ( imp == null )
+		{
+			Utils.error( "Could not open file: " + file.getAbsolutePath() );
+			return null;
+		}
+
+		if ( imp.getNSlices() > 1 )
+		{
+			new StackConverter( imp ).convertToGray8();
+		}
+		else
+		{
+			new ImageConverter( imp ).convertToGray8();
 		}
 
 		return ImageJFunctions.wrapReal( imp );

@@ -4,12 +4,11 @@ import de.embl.cba.em.Utils;
 import de.embl.cba.em.bdv.BdvExport;
 import de.embl.cba.em.imageprocessing.Algorithms;
 import de.embl.cba.em.imageprocessing.Projection;
-import de.embl.cba.transforms.utils.Transforms;
 import ij.ImagePlus;
+import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
-import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
 import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
@@ -28,10 +27,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static de.embl.cba.em.Utils.asByteProcessor;
 import static de.embl.cba.em.Utils.asFloatProcessor;
 import static de.embl.cba.em.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
-import static de.embl.cba.transforms.utils.Transforms.createTransformedRaView;
 
 public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 {
@@ -44,7 +43,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private final TomogramMatchingSettings settings;
 	private final OpService opService;
 	private ArrayList< File > tomogramFiles;
-	private FloatProcessor overviewProcessor;
+	private ByteProcessor overviewProcessor;
 	private RandomAccessibleInterval< T > overview;
 	private final int fillingValue;
 
@@ -91,7 +90,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		for ( File tomogramFile : tomogramFiles )
 		{
-			computeAndSaveRegisteredTomogram( tomogramFile );
+			registerAndSaveTomogram( tomogramFile );
 		}
 	}
 
@@ -102,7 +101,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		rotateOverview();
 
-		overviewProcessor = asFloatProcessor( overview, fillingValue );
+		overviewProcessor = asByteProcessor( overview );
 
 		if ( settings.showIntermediateResults )
 			new ImagePlus( "Rotated Overview", overviewProcessor  ).show();
@@ -111,7 +110,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private void loadOverview()
 	{
 		Utils.log( "Opening overview image..." );
-		overview = Utils.openImage( settings.overviewImage );
+		overview = Utils.openImageAs8Bit( settings.overviewImage );
 
 		settings.overviewCalibrationNanometer =
 				Utils.getNanometerPixelWidth( settings.overviewImage );
@@ -202,7 +201,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	}
 
 
-	private void computeAndSaveRegisteredTomogram( File tomogramFile )
+	private void registerAndSaveTomogram( File tomogramFile )
 	{
 		Utils.log( "Matching " + tomogramFile.getName() +" ..." );
 
@@ -254,14 +253,14 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
 	{
 		settings.tomogramCalibrationNanometer = Utils.getNanometerPixelWidth( tomogramFile );
-		return Utils.openImage( tomogramFile );
+		return Utils.openImageAs8Bit( tomogramFile );
 	}
 
 	private double[] computePositionWithinOverviewImage( RandomAccessibleInterval cropped )
 	{
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
-				Utils.asFloatProcessor( cropped, -1 ),
+				Utils.asByteProcessor( cropped ),
 				NORMALIZED_CORRELATION,
 				true );
 
