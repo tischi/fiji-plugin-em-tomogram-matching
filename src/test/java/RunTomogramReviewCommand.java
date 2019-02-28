@@ -1,6 +1,6 @@
 import net.imagej.ImageJ;
 
-public class MatchedTomogramReviewCommand
+public class RunTomogramReviewCommand
 {
 
 	public static void main(final String... args) throws Exception

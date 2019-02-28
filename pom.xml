@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>23.2.0</version>
+		<version>25.0.0</version>
 	</parent>
 
 	<artifactId>fiji-plugin-tomogramMatching</artifactId>
-	<version>0.2.00</version>
+	<version>0.2.01</version>
 	<url>https://github.com/imglib/fiji-plugin-em-tomogram-matching/issues</url>
 
 	<name>Fiji Plugin EM Tomogram Matching</name>
@@ -81,6 +81,12 @@
 		<repository>
 			<id>imagej.public</id>
 			<url>https://maven.imagej.net/content/groups/public</url>
+		</repository>
+		<!-- for Tischi dependencies -->
+		<repository>
+			<id>bintray-tischi-snapshots</id>
+			<name>bintray</name>
+			<url>https://dl.bintray.com/tischi/snapshots</url>
 		</repository>
 	</repositories>
 

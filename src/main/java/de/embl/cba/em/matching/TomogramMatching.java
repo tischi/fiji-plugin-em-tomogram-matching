@@ -2,8 +2,8 @@ package de.embl.cba.em.matching;
 
 import de.embl.cba.em.Utils;
 import de.embl.cba.em.bdv.BdvExport;
-import de.embl.cba.em.imageprocessing.Algorithms;
 import de.embl.cba.em.imageprocessing.Projection;
+import de.embl.cba.transforms.utils.Scalings;
 import ij.ImagePlus;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static de.embl.cba.em.Utils.asByteProcessor;
-import static de.embl.cba.em.Utils.asFloatProcessor;
 import static de.embl.cba.em.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
 
@@ -60,10 +59,11 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		openAndRotateOverview();
 
-		if ( settings.saveOverview ) saveOverviewAsBdv();
-
 		createTomogramFileList();
-		computeAndSaveRegisteredTomograms();
+
+		registerAndSaveTomograms();
+
+		if ( settings.saveOverview ) saveOverviewAsBdv();
 	}
 
 	private void createTomogramFileList()
@@ -86,7 +86,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return true;
 	}
 
-	private void computeAndSaveRegisteredTomograms()
+	private void registerAndSaveTomograms()
 	{
 		for ( File tomogramFile : tomogramFiles )
 		{
@@ -156,23 +156,21 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void saveOverviewAsBdv()
 	{
-		(new Thread( () -> {
-			Utils.log( "Exporting overview image..." );
 
-			ImagePlus imagePlus = getOverviewAs3dImagePlus();
+		Utils.log( "Exporting overview image..." );
 
-			double[] calibration = new double[ 3 ];
-			calibration[ 0 ] = settings.overviewCalibrationNanometer;
-			calibration[ 1 ] = calibration[ 0 ];
-			calibration[ 2 ] = 2000;
+		ImagePlus imagePlus = getOverviewAs3dImagePlus();
 
-			double[] offset = new double[ 3 ];
+		double[] calibration = new double[ 3 ];
+		calibration[ 0 ] = settings.overviewCalibrationNanometer;
+		calibration[ 1 ] = calibration[ 0 ];
+		calibration[ 2 ] = 2000;
 
-			String path = settings.outputDirectory + File.separator + "overview";
-			imagePlus.setTitle( "overview" );
-			BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
+		double[] offset = new double[ 3 ];
 
-			} )).start();
+		String path = settings.outputDirectory + File.separator + "overview";
+		imagePlus.setTitle( "overview" );
+		BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
 
 	}
 
@@ -205,7 +203,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		Utils.log( "Matching " + tomogramFile.getName() +" ..." );
 
-		final RandomAccessibleInterval< T > tomogram = openTomogram( tomogramFile );
+		final RandomAccessibleInterval< T > tomogram =
+				openTomogram( tomogramFile );
 
 		// avg projection
 		Utils.log( "Computing average projection..." );
@@ -220,20 +219,18 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 			projected = tomogram;
 		}
 
-		showIntermediateResult( projected, "projection-" + tomogramFile.getName() );
+		showIntermediateResult( projected,
+				"projection-" + tomogramFile.getName() );
 
 		// scale
 		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected );
-		final RandomAccessibleInterval< T > downscaled = Algorithms.createDownscaledArrayImg( projected, scaling );
+		final RandomAccessibleInterval< T > downscaled =
+				Scalings.createRescaledArrayImg(
+						projected, scaling );
 
-		showIntermediateResult( downscaled, "scaled-projection-" + tomogramFile.getName() );
-
-		// crop
-//		final FinalInterval cropAfterRotation = getCroppingInterval();
-//		final RandomAccessibleInterval cropped = Algorithms.copyAsArrayImg( Views.interval( Views.zeroMin( downscaled ), cropAfterRotation ) );
-
-		//showIntermediateResult( cropped );
+		showIntermediateResult( downscaled,
+				"scaled-projection-" + tomogramFile.getName() );
 
 		// match
 		Utils.log( "Finding position in overview image..." );

@@ -27,9 +27,11 @@ import net.imglib2.cache.img.SingleCellArrayImg;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.loops.LoopBuilder;
 import net.imglib2.roi.labeling.ImgLabeling;
 import net.imglib2.roi.labeling.LabelRegions;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.Type;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.NumericType;
@@ -38,6 +40,7 @@ import net.imglib2.type.numeric.integer.IntType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.util.Intervals;
+import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import java.awt.*;
@@ -74,21 +77,15 @@ public class Utils
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > copyAsArrayImg( RandomAccessibleInterval< T > rai )
+	RandomAccessibleInterval< T > copyAsArrayImg(
+			RandomAccessibleInterval< T > orig )
 	{
+		final RandomAccessibleInterval< T > copy =
+				Views.translate(
+						new ArrayImgFactory( Util.getTypeFromInterval( orig ) ).create( orig ),
+						Intervals.minAsLongArray( orig ) );
 
-		RandomAccessibleInterval< T > copy = new ArrayImgFactory( rai.randomAccess().get() ).create( rai );
-		copy = Transforms.getWithAdjustedOrigin( rai, copy );
-
-		final Cursor< T > out = Views.iterable( copy ).localizingCursor();
-		final RandomAccess< T > in = rai.randomAccess();
-
-		while( out.hasNext() )
-		{
-			out.fwd();
-			in.setPosition( out );
-			out.get().set( in.get() );
-		}
+		LoopBuilder.setImages( copy, orig ).forEachPixel( Type::set );
 
 		return copy;
 	}
@@ -111,7 +108,8 @@ public class Utils
 		return cellPos;
 	}
 
-	public static void showIntermediateResult( RandomAccessibleInterval rai, String title )
+	public static void showIntermediateResult(
+			RandomAccessibleInterval rai, String title )
 	{
 		if ( showIntermediateResults )
 		{
@@ -121,7 +119,8 @@ public class Utils
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai, int fillingValue )
+	FloatProcessor asFloatProcessor(
+			RandomAccessibleInterval< T > rai, int fillingValue )
 	{
 		Utils.log( "Converting Image to FloatProcessor..." );
 
@@ -165,6 +164,8 @@ public class Utils
 
 		if ( rai.numDimensions() == 3 )
 		{
+			// The first channel is the EM
+			// The other channels are, e.g. fluorescence
 			rai2D = Views.hyperSlice( rai, 2, 0 );
 		}
 
@@ -184,16 +185,16 @@ public class Utils
 		return processor;
 	}
 
-
-
-	public static ArrayList< File > getFileList( File directory, String fileNameRegExp )
+	public static ArrayList< File > getFileList(
+			File directory, String fileNameRegExp )
 	{
 		final ArrayList< File > files = new ArrayList<>();
 		populateFileList( directory, fileNameRegExp,files );
 		return files;
 	}
 
-	public static void populateFileList( File directory, String fileNameRegExp, List< File > files) {
+	public static void populateFileList(
+			File directory, String fileNameRegExp, List< File > files) {
 
 		// Get all the files from a directory.
 		File[] fList = directory.listFiles();
@@ -257,6 +258,7 @@ public class Utils
 		target = Views.translate( target, offset );
 		return target;
 	}
+
 
 	public static double[] getCenter( Interval interval )
 	{
