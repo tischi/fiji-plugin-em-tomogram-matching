@@ -1,6 +1,5 @@
 package de.embl.cba.em.matching;
 
-import de.embl.cba.em.Utils;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -65,7 +64,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 
 	public void run()
 	{
-		setSettingsFromUI();
+		setSettings();
 
 		final TomogramMatching matching = new TomogramMatching( settings, opService );
 
@@ -76,7 +75,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	}
 
 
-	public void setSettingsFromUI()
+	public void setSettings()
 	{
 		settings.outputDirectory = outputDirectory;
 		settings.overviewImage = overviewImage;
@@ -85,6 +84,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 		settings.tomogramInputDirectory = tomogramInputDirectory;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
+		settings.confirmScalingViaUI = true;
 //		settings.fillingValue = fillingValue;
 	}
 

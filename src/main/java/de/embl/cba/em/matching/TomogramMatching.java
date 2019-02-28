@@ -5,6 +5,7 @@ import de.embl.cba.em.bdv.BdvExport;
 import de.embl.cba.em.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.ImagePlus;
+import ij.gui.GenericDialog;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import net.imagej.ops.OpService;
@@ -48,12 +49,15 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval< T > downscaledTomogram;
 	private RandomAccessibleInterval< T > projectedTomogram;
 	private double[] bestMatch;
+	private boolean isFirstTomogram;
 
 	public TomogramMatching( TomogramMatchingSettings settings, OpService opService )
 	{
 		this.settings = settings;
 		this.opService = opService;
 		this.fillingValue = settings.fillingValue;
+
+		isFirstTomogram = true;
 
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
@@ -113,25 +117,52 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private void loadOverview()
 	{
 		Utils.log( "Opening overview image..." );
-		overview = Utils.openImageAs8Bit( settings.overviewImage );
 
+		setOverviewCalibration();
+
+		overview = Utils.openImageAs8Bit( settings.overviewImage );
+	}
+
+	private void setOverviewCalibration()
+	{
 		settings.overviewCalibrationNanometer =
 				Utils.getNanometerPixelWidth( settings.overviewImage );
+
+		if ( settings.confirmScalingViaUI )
+		{
+			settings.overviewCalibrationNanometer
+					= confirmImageScalingUI(
+					settings.overviewCalibrationNanometer,
+					"Overview");
+		}
+	}
+
+	private double confirmImageScalingUI( double value, final String imageName )
+	{
+		final GenericDialog gd =
+				new GenericDialog( imageName + " scaling" );
+		gd.addNumericField(
+				imageName + " pixel spacing",
+				value, 20, 30, "nm" );
+		gd.hideCancelButton();
+		gd.showDialog();
+		return gd.getNextNumber();
 	}
 
 	private void rotateOverview()
 	{
-		// rotate
 		if ( overview.numDimensions() == 2 )
 		{
 			final AffineTransform2D affineTransform2D = new AffineTransform2D();
-			affineTransform2D.rotate( Math.toRadians( -settings.tomogramAngleDegrees ) );
+			affineTransform2D.rotate(
+					Math.toRadians( -settings.tomogramAngleDegrees ) );
 			overview = createTransformedView( overview, affineTransform2D );
 		}
 		else if ( overview.numDimensions() == 3 )
 		{
 			final AffineTransform3D affineTransform3D = new AffineTransform3D();
-			affineTransform3D.rotate( 2, Math.toRadians( -settings.tomogramAngleDegrees ) );
+			affineTransform3D.rotate(
+					2, Math.toRadians( -settings.tomogramAngleDegrees ) );
 			overview = createTransformedView( overview, affineTransform3D );
 		}
 	}
@@ -173,7 +204,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		String path = settings.outputDirectory + File.separator + "overview";
 		imagePlus.setTitle( "overview" );
-		BdvExport.export( imagePlus, path, calibration, "nanometer", offset );
+		BdvExport.export(
+				imagePlus, path, calibration, "nanometer", offset );
 
 	}
 
@@ -186,16 +218,19 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< T > getOverviewAs3d()
 	{
-		RandomAccessibleInterval< T > overview3d = null;
+		RandomAccessibleInterval< T > overview3d;
 
 		if ( overview.numDimensions() == 2 )
 		{
-			overview3d = Views.addDimension( overview, 0, 0 );
-			overview3d = Views.addDimension( overview3d, 1, 3 );
+			overview3d = Views.addDimension(
+					overview, 0, 0 );
+			overview3d = Views.addDimension(
+					overview3d, 1, 3 );
 		}
 		else
 		{
-			overview3d = Views.addDimension( overview, 1, 3 );
+			overview3d = Views.addDimension(
+					overview, 1, 3 );
 		}
 
 		return overview3d;
@@ -250,7 +285,9 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 				"projection-" + tomogramFile.getName() );
 	}
 
-	private void createDownscaledTomogram( File tomogramFile, RandomAccessibleInterval< T > projected )
+	private void createDownscaledTomogram(
+			File tomogramFile,
+			RandomAccessibleInterval< T > projected )
 	{
 		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected.numDimensions() );
@@ -262,11 +299,23 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
 	{
-		settings.tomogramCalibrationNanometer = Utils.getNanometerPixelWidth( tomogramFile );
+		settings.tomogramCalibrationNanometer
+				= Utils.getNanometerPixelWidth( tomogramFile );
+
+		if ( settings.confirmScalingViaUI && isFirstTomogram )
+		{
+			settings.tomogramCalibrationNanometer =
+					confirmImageScalingUI(
+						settings.tomogramCalibrationNanometer,
+						"Tomogram");
+			isFirstTomogram = false;
+		}
+
 		return Utils.openImageAs8Bit( tomogramFile );
 	}
 
-	private double[] computePositionWithinOverviewImage( RandomAccessibleInterval cropped )
+	private double[] computePositionWithinOverviewImage(
+			RandomAccessibleInterval cropped )
 	{
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
