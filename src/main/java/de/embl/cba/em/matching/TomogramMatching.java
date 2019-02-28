@@ -45,6 +45,9 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private ByteProcessor overviewProcessor;
 	private RandomAccessibleInterval< T > overview;
 	private final int fillingValue;
+	private RandomAccessibleInterval< T > downscaledTomogram;
+	private RandomAccessibleInterval< T > projectedTomogram;
+	private double[] bestMatch;
 
 	public TomogramMatching( TomogramMatchingSettings settings, OpService opService )
 	{
@@ -203,48 +206,58 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		Utils.log( "Matching " + tomogramFile.getName() +" ..." );
 
-		final RandomAccessibleInterval< T > tomogram =
-				openTomogram( tomogramFile );
+		final RandomAccessibleInterval< T > tomogram = openTomogram( tomogramFile );
 
+		createProjectedTomogram( tomogramFile, tomogram );
+
+		createDownscaledTomogram( tomogramFile, projectedTomogram );
+
+		findBestMatchingPosition();
+
+		if ( settings.saveResults )
+			saveTomogramAsBdv( tomogram, bestMatch, tomogramFile );
+
+	}
+
+	private void findBestMatchingPosition()
+	{
+		// match
+		Utils.log( "Finding bestMatch in overview image..." );
+		bestMatch = computePositionWithinOverviewImage( downscaledTomogram );
+
+		Utils.log( "Best match found at (upper left corner) [nm]: " + bestMatch[ 0 ] + ", " + bestMatch[ 1 ] );
+		Utils.log( "Best match found at (upper left corner) [pixels]: " +
+				(int) ( bestMatch[ 0 ] / settings.overviewCalibrationNanometer ) + ", " +
+				(int) ( bestMatch[ 1 ] / settings.overviewCalibrationNanometer ) );
+	}
+
+	private void createProjectedTomogram( File tomogramFile, RandomAccessibleInterval< T > tomogram )
+	{
 		// avg projection
+		// TODO: to speed this up one could subsample before
 		Utils.log( "Computing average projection..." );
-		RandomAccessibleInterval< T > projected;
 		if ( tomogram.numDimensions() == 3 )
 		{
 			final Projection projection = new Projection( tomogram, Z_DIMENSION );
-			projected = projection.average();
+			projectedTomogram = projection.average();
 		}
 		else
 		{
-			projected = tomogram;
+			projectedTomogram = tomogram;
 		}
 
-		showIntermediateResult( projected,
+		showIntermediateResult( projectedTomogram,
 				"projection-" + tomogramFile.getName() );
+	}
 
-		// scale
+	private void createDownscaledTomogram( File tomogramFile, RandomAccessibleInterval< T > projected )
+	{
 		Utils.log( "Scaling to overview image resolution..." );
-		final double[] scaling = getScaling( projected );
-		final RandomAccessibleInterval< T > downscaled =
-				Scalings.createRescaledArrayImg(
-						projected, scaling );
-
-		showIntermediateResult( downscaled,
+		final double[] scaling = getScaling( projected.numDimensions() );
+		downscaledTomogram = Scalings.createRescaledArrayImg(
+				projected, scaling );
+		showIntermediateResult( downscaledTomogram,
 				"scaled-projection-" + tomogramFile.getName() );
-
-		// match
-		Utils.log( "Finding position in overview image..." );
-		final double[] position = computePositionWithinOverviewImage( downscaled );
-
-		Utils.log( "Best match found at (upper left corner) [nm]: " + position[ 0 ] + ", " + position[ 1 ] );
-		Utils.log( "Best match found at (upper left corner) [pixels]: " +
-				(int) ( position[ 0 ] / settings.overviewCalibrationNanometer ) + ", " +
-				(int) ( position[ 1 ] / settings.overviewCalibrationNanometer ) );
-
-		// save
-		if ( settings.saveResults )
-			saveTomogramAsBdv( tomogram, position, tomogramFile );
-
 	}
 
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
@@ -301,17 +314,13 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return calibration;
 	}
 
-	private FinalInterval getCroppingInterval()
+	private double[] getScaling( int numDimensions )
 	{
-		// TODO: make this generic
-		return new FinalInterval( new long[]{ 42, 42 }, new long[]{ 215 + 42, 215 + 42 } );
-	}
-
-	private double[] getScaling( RandomAccessibleInterval< T > projected )
-	{
-		final double scalingRatio = settings.tomogramCalibrationNanometer / settings.overviewCalibrationNanometer;
-		final double[] scaling = new double[ projected.numDimensions() ];
+		final double scalingRatio = settings.tomogramCalibrationNanometer
+				/ settings.overviewCalibrationNanometer;
+		final double[] scaling = new double[ numDimensions ];
 		Arrays.fill( scaling, scalingRatio );
+		Utils.log( "Scaling factor: " +  scalingRatio );
 		return scaling;
 	}
 
