@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-tomogramMatching</artifactId>
-	<version>0.2.01</version>
+	<version>0.2.02</version>
 	<url>https://github.com/imglib/fiji-plugin-em-tomogram-matching/issues</url>
 
 	<name>Fiji Plugin EM Tomogram Matching</name>

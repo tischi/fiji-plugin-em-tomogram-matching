@@ -609,20 +609,21 @@ public class Utils
 		{
 			Utils.log( "Reading voxel size from " + file.getName() );
 			final ImagePlus imagePlus = IJ.openVirtual( file.getAbsolutePath() );
-			double pixelWidth = imagePlus.getCalibration().pixelWidth;
-			String unit = imagePlus.getCalibration().getUnit();
 
-			double voxelSize = asNanometers( pixelWidth, unit );
+			double voxelSize = asNanometers(
+					imagePlus.getCalibration().pixelWidth,
+					imagePlus.getCalibration().getUnit() );
 
 			if ( voxelSize == -1 )
 			{
 				Utils.error( "Could not interpret calibration unit of "
 						+ file.getName() +
-						"; unit found was: " + unit );
+						"; unit found was: "
+						+ imagePlus.getCalibration().getUnit() );
 			}
 			
 			Utils.log("Voxel size [nm]: " + voxelSize );
-			return pixelWidth;
+			return voxelSize;
 		}
 		else
 		{
@@ -681,11 +682,18 @@ public class Utils
 
 		if ( unit != null )
 		{
-			if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
+			if ( unit.equals( "nm" )
+					|| unit.equals( "nanometer" )
+					|| unit.equals( "nanometers" ) )
 			{
 				voxelSize = value * 1D;
 			}
-			else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
+			else if ( unit.equals( "\u00B5m" )
+					|| unit.equals( "um" )
+					|| unit.equals( "micrometer" )
+					|| unit.equals( "micrometers" )
+					|| unit.equals( "microns" )
+					|| unit.equals( "micron" ) )
 			{
 				voxelSize = value * 1000D;
 			}
