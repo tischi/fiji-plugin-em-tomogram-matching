@@ -1,4 +1,4 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.match;
 
 import ij.*;
 import ij.process.*;
@@ -17,7 +17,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 /*
  * This plugin implement the template match method from OpenCV library. The interface between OpenCV and Java is
  * using Samuel Audet's JavaCV code from: http://code.google.com/p/javacv/
- * The detailed algorithm of each matching method can be found at opencv's documentation page:
+ * The detailed algorithm of each match method can be found at opencv's documentation page:
  * http://opencv.willowgarage.com/documentation/object_detection.html?highlight=matchtemplate#cvMatchTemplate
  * It supports 8 bit and 16 bit grayscale only.
  *
@@ -62,7 +62,7 @@ public class TemplateMatchingPlugin implements PlugIn {
 		}
 		int wCount = WindowManager.getImageCount();
 		if (wCount < 2) {
-			IJ.error("we need two images to do template matching");
+			IJ.error("we need two images to do template match");
 			return;
 		}
 
@@ -89,7 +89,7 @@ public class TemplateMatchingPlugin implements PlugIn {
 		}
 
 		/*
-		 ** start matching
+		 ** start match
 		 */
 
 
@@ -412,10 +412,10 @@ public class TemplateMatchingPlugin implements PlugIn {
 	}
 
 	public void showAbout() {
-		IJ.showMessage("cvMatch Template", "This plugin implements the tempalte matching function from\n"
+		IJ.showMessage("cvMatch Template", "This plugin implements the tempalte match function from\n"
 				+ "the OpenCV library. It will try to find an object (template)\n"
-				+ "within a given image (image).Six different matching algorithms\n"
-				+ "(methods)could be used. The matching result could be printed\n"
+				+ "within a given image (image).Six different match algorithms\n"
+				+ "(methods)could be used. The match result could be printed\n"
 				+ "in the log window or the result table. \n"
 				+ "You can also decide to display the correlation map. The coordinates\n"
 				+ "of the maximum (or minimum for the square difference methods)\n"
@@ -423,6 +423,6 @@ public class TemplateMatchingPlugin implements PlugIn {
 				+ "By checking the multimatch option, not only the best match will\n"
 				+ "be shown, but also all the similar pattern above the defined\n"
 				+ "radius will be shown (Find maximum function on the correlation map)\n"
-				+ "More details on \nhttps://sites.google.com/site/qingzongtseng/template-matching-ij-plugin");
+				+ "More details on \nhttps://sites.google.com/site/qingzongtseng/template-match-ij-plugin");
 	}
 }

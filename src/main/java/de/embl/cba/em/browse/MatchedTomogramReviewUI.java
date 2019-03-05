@@ -1,4 +1,4 @@
-package de.embl.cba.em.review;
+package de.embl.cba.em.browse;
 
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;

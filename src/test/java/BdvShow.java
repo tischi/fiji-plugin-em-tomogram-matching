@@ -22,14 +22,14 @@ public class BdvShow < T extends RealType< T > & NativeType< T > >
 {
 	public static < T extends RealType< T > & NativeType< T > > void run() throws SpimDataException
 	{
-		ImagePlus overviewImp = IJ.openImage( "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-matching-development/2D_lowMag.tif" );
+		ImagePlus overviewImp = IJ.openImage( "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-match-development/2D_lowMag.tif" );
 		final RandomAccessibleInterval< T > overview = ImageJFunctions.wrapReal( overviewImp );
 
 		RandomAccessible< T > extendedOverview = Views.extendBorder( overview );
 		final BdvStackSource< T > source = BdvFunctions.show( extendedOverview, overview, "overview" );
 		Bdv bdv = source.getBdvHandle();
 
-		String outputDirectory = "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-matching-development/output";
+		String outputDirectory = "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-match-development/output";
 		String outputFilename = "g22_t27-downScaled";
 		String outputPath = outputDirectory + File.pathSeparator + outputFilename;
 		final SpimData spimData = new XmlIoSpimData().load( outputPath + ".xml" );

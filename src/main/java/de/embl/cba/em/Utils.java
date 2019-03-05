@@ -3,22 +3,12 @@ package de.embl.cba.em;
 import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
 import bdv.util.Bdv;
-import de.embl.cba.transforms.utils.Transforms;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.measure.Calibration;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
-import ij.process.ImageConverter;
-import ij.process.StackConverter;
-import loci.common.services.ServiceFactory;
 import loci.formats.FormatException;
-import loci.formats.IFormatReader;
-import loci.formats.ImageReader;
-import loci.formats.meta.IMetadata;
-import loci.formats.services.OMEXMLService;
 import loci.plugins.BF;
-import loci.plugins.in.ImporterOptions;
 import mpicbg.spim.data.SpimData;
 import net.imglib2.Cursor;
 import net.imglib2.*;
@@ -488,75 +478,11 @@ public class Utils
 	{
 		Utils.log( "Opening " + file.getName() + "...");
 
-		ImagePlus imp = IJ.openImage( file.getAbsolutePath() );
-
-		if( imp == null )
-		{
-			imp = openImagePlusUsingBF( file );
-		}
-
-		if ( imp == null )
-		{
-			Utils.error( "Could not open file: " + file.getAbsolutePath() );
-			return null;
-		}
+		ImagePlus imp = ImageIO.openWithBioFormats( file );
 
 		return ImageJFunctions.wrapReal( imp );
 	}
 
-	public static  < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > openImageAs8Bit( File file )
-	{
-		Utils.log( "Opening " + file.getName() + "...");
-
-		ImagePlus imp = IJ.openImage( file.getAbsolutePath() );
-
-		if( imp == null )
-		{
-			imp = openImagePlusUsingBF( file );
-		}
-
-		if ( imp == null )
-		{
-			Utils.error( "Could not open file: " + file.getAbsolutePath() );
-			return null;
-		}
-
-		if ( imp.getNSlices() > 1 )
-		{
-			new StackConverter( imp ).convertToGray8();
-		}
-		else
-		{
-			new ImageConverter( imp ).convertToGray8();
-		}
-
-		return ImageJFunctions.wrapReal( imp );
-	}
-
-
-	public static double getNanometerVoxelSize( ImagePlus imagePlus )
-	{
-		final Calibration calibration = imagePlus.getCalibration();
-
-		String unit = calibration.getUnit();
-
-		double voxelSize = calibration.pixelWidth;
-
-		if ( unit != null )
-		{
-			if ( unit.equals( "nm" ) || unit.equals( "nanometer" ) || unit.equals( "nanometers" ) )
-			{
-				voxelSize = voxelSize;
-			}
-			else if ( unit.equals( "\u00B5m" ) || unit.equals( "um" ) || unit.equals( "micrometer" ) || unit.equals( "micrometers" ) || unit.equals( "microns" ) || unit.equals( "micron" ) )
-			{
-				voxelSize = voxelSize * 1000D;
-			}
-		}
-
-		return voxelSize;
-	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > openRandomAccessibleIntervalUsingBF( File file )
@@ -579,102 +505,6 @@ public class Utils
 		return ImageJFunctions.wrapReal( imps[ 0 ] );
 	}
 
-	public static ImagePlus openImagePlusUsingBF( File file )
-	{
-		ImagePlus[] imps = new ImagePlus[ 0 ];
-
-		try
-		{
-			final ImporterOptions importerOptions = new ImporterOptions();
-			importerOptions.setVirtual( true );
-			importerOptions.setId( file.getAbsolutePath() );
-			imps = BF.openImagePlus( importerOptions );
-		}
-		catch ( FormatException e )
-		{
-			e.printStackTrace();
-		}
-		catch ( IOException e )
-		{
-			e.printStackTrace();
-		}
-
-		return imps[ 0 ];
-	}
-
-
-	public static double getNanometerPixelWidth( File file )
-	{
-		if ( file.getName().contains( ".tif" ) )
-		{
-			Utils.log( "Reading voxel size from " + file.getName() );
-			final ImagePlus imagePlus = IJ.openVirtual( file.getAbsolutePath() );
-
-			double voxelSize = asNanometers(
-					imagePlus.getCalibration().pixelWidth,
-					imagePlus.getCalibration().getUnit() );
-
-			if ( voxelSize == -1 )
-			{
-				Utils.error( "Could not interpret calibration unit of "
-						+ file.getName() +
-						"; unit found was: "
-						+ imagePlus.getCalibration().getUnit() );
-			}
-			
-			Utils.log("Voxel size [nm]: " + voxelSize );
-			return voxelSize;
-		}
-		else
-		{
-			return getNanometerPixelWidthUsingBF( file );
-		}
-
-	}
-
-
-	public static double getNanometerPixelWidthUsingBF( File file )
-	{
-		Utils.log( "Reading voxel size from " + file.getName() );
-
-		// create OME-XML metadata store
-		ServiceFactory factory = null;
-		try
-		{
-			factory = new ServiceFactory();
-			OMEXMLService service = factory.getInstance(OMEXMLService.class);
-			IMetadata meta = service.createOMEXMLMetadata();
-
-			// create format reader
-			IFormatReader reader = new ImageReader();
-			reader.setMetadataStore( meta );
-
-			// initialize file
-			reader.setId( file.getAbsolutePath() );
-			reader.setSeries(0);
-
-			String unit = meta.getPixelsPhysicalSizeX( 0 ).unit().getSymbol();
-			final double value = meta.getPixelsPhysicalSizeX( 0 ).value().doubleValue();
-
-			double voxelSize = asNanometers( value, unit );
-
-			if ( voxelSize == -1 )
-			{
-				Utils.error( "Could not interpret calibration unit of " + file.getName() +
-						"; unit found was: " + unit );
-			}
-
-			Utils.log("Voxel size [nm]: " + voxelSize );
-			return voxelSize;
-
-		}
-		catch ( Exception e )
-		{
-			e.printStackTrace();
-		}
-
-		return 0.0;
-	}
 
 	public static double asNanometers( double value, String unit )
 	{
@@ -706,7 +536,7 @@ public class Utils
 		return voxelSize;
 	}
 
-	private static void error( String s )
+	public static void error( String s )
 	{
 		IJ.showMessage( s );
 	}

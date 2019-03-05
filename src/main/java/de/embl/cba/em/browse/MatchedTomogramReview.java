@@ -1,5 +1,6 @@
-package de.embl.cba.em.review;
+package de.embl.cba.em.browse;
 
+import bdv.spimdata.XmlIoSpimDataMinimal;
 import bdv.util.*;
 import de.embl.cba.em.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.em.bdv.ImageSource;
@@ -131,8 +132,9 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	{
 		try
 		{
-			final SpimData spimData;
-			spimData = new XmlIoSpimData().load( file.getAbsolutePath() );
+			final XmlIoSpimDataMinimal xmlIoSpimDataMinimal = new XmlIoSpimDataMinimal();
+			final SpimData spimData =
+					new XmlIoSpimData().load( file.getAbsolutePath() );
 			return spimData;
 		}
 		catch ( SpimDataException e )

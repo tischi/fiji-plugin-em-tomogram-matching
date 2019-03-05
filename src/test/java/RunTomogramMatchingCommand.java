@@ -1,3 +1,4 @@
+import de.embl.cba.em.ui.TomogramMatchingCommand;
 import net.imagej.ImageJ;
 
 public class RunTomogramMatchingCommand
@@ -9,7 +10,7 @@ public class RunTomogramMatchingCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( de.embl.cba.em.matching.TomogramMatchingCommand.class, true );
+		ij.command().run( TomogramMatchingCommand.class, true );
 	}
 
 }

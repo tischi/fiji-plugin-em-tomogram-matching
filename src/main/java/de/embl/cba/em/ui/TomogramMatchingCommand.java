@@ -1,5 +1,7 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.ui;
 
+import de.embl.cba.em.match.TomogramMatching;
+import de.embl.cba.em.match.TomogramMatchingSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
@@ -15,7 +17,7 @@ import org.scijava.ui.UIService;
 
 import java.io.File;
 
-@Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram matching" )
+@Plugin(type = Command.class, menuPath = "Plugins>Registration>Tomogram Matching" )
 public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
 	@Parameter

@@ -1,9 +1,11 @@
-package de.embl.cba.em.matching;
+package de.embl.cba.em.match;
 
+import de.embl.cba.em.ImageIO;
 import de.embl.cba.em.Utils;
 import de.embl.cba.em.bdv.BdvExport;
 import de.embl.cba.em.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.process.ByteProcessor;
@@ -103,7 +105,6 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	private void openAndRotateOverview()
 	{
-
 		loadOverview();
 
 		rotateOverview();
@@ -120,13 +121,13 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		setOverviewCalibration();
 
-		overview = Utils.openImageAs8Bit( settings.overviewImage );
+		overview = ImageIO.openImageAs8Bit( settings.overviewImage );
 	}
 
 	private void setOverviewCalibration()
 	{
 		settings.overviewCalibrationNanometer =
-				Utils.getNanometerPixelWidth( settings.overviewImage );
+				ImageIO.getNanometerPixelWidth( settings.overviewImage );
 
 		if ( settings.confirmScalingViaUI )
 		{
@@ -251,13 +252,11 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		if ( settings.saveResults )
 			saveTomogramAsBdv( tomogram, bestMatch, tomogramFile );
-
 	}
 
 	private void findBestMatchingPosition()
 	{
-		// match
-		Utils.log( "Finding bestMatch in overview image..." );
+		Utils.log( "Finding best match in overview image..." );
 		bestMatch = computePositionWithinOverviewImage( downscaledTomogram );
 
 		Utils.log( "Best match found at (upper left corner) [nm]: " + bestMatch[ 0 ] + ", " + bestMatch[ 1 ] );
@@ -291,16 +290,14 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	{
 		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected.numDimensions() );
-		downscaledTomogram = Scalings.createRescaledArrayImg(
-				projected, scaling );
-		showIntermediateResult( downscaledTomogram,
-				"scaled-projection-" + tomogramFile.getName() );
+		downscaledTomogram = Scalings.createRescaledArrayImg( projected, scaling );
+		showIntermediateResult( downscaledTomogram, "scaled-projection-" + tomogramFile.getName() );
 	}
 
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
 	{
 		settings.tomogramCalibrationNanometer
-				= Utils.getNanometerPixelWidth( tomogramFile );
+				= ImageIO.getNanometerPixelWidth( tomogramFile );
 
 		if ( settings.confirmScalingViaUI && isFirstTomogram )
 		{
@@ -311,19 +308,28 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 			isFirstTomogram = false;
 		}
 
-		return Utils.openImageAs8Bit( tomogramFile );
+		return ImageIO.openImageAs8Bit( tomogramFile );
 	}
 
-	private double[] computePositionWithinOverviewImage(
-			RandomAccessibleInterval cropped )
+	private double[] computePositionWithinOverviewImage( RandomAccessibleInterval< T > tomo )
 	{
+		final ByteProcessor tomoByteProcessor = Utils.asByteProcessor( tomo );
+
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
-				Utils.asByteProcessor( cropped ),
+				tomoByteProcessor,
 				NORMALIZED_CORRELATION,
-				true );
+				false );
 
-		final int[] position = TemplateMatchingPlugin.findMax( correlation, 0 );
+		final ImagePlus correlationImp = new ImagePlus( "correlation", correlation );
+
+		if ( settings.showIntermediateResults )
+			correlationImp.show();
+
+		Utils.log( "Removing spurious maxima from correlation by minimum filter of radius 2..." );
+		IJ.run( correlationImp, "Minimum...", "radius=2" );
+
+		final int[] position = TemplateMatchingPlugin.findMax( correlationImp.getProcessor(), 0 );
 
 		double[] nanometerPosition = new double[ 3 ];
 		for ( int i = 0; i < position.length; ++i )

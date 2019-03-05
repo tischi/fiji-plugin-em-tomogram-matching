@@ -13,9 +13,9 @@ public class BdvExport
 {
 	public static void main ( String... args ) throws SpimDataException
 	{
-		final ImagePlus imp = IJ.openImage( "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-matching-development/g22_t27-downScaled.tif" );
+		final ImagePlus imp = IJ.openImage( "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-match-development/g22_t27-downScaled.tif" );
 
-		String outputDirectory = "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-matching-development/output";
+		String outputDirectory = "/Users/tischer/Documents/giulia-mizzon-CLEM--data/template-match-development/output";
 		String outputFilename = "g22_t27-downScaled";
 		String outputPath = outputDirectory + File.pathSeparator + outputFilename;
 

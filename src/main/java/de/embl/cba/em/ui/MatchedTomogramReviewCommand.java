@@ -1,5 +1,7 @@
-package de.embl.cba.em.review;
+package de.embl.cba.em.ui;
 
+import de.embl.cba.em.browse.MatchedTomogramReview;
+import de.embl.cba.em.browse.MatchedTomogramReviewSettings;
 import ij.ImagePlus;
 import net.imagej.DatasetService;
 import net.imagej.ops.OpService;
@@ -47,10 +49,7 @@ public class MatchedTomogramReviewCommand<T extends RealType<T> & NativeType< T 
 		final MatchedTomogramReview review = new MatchedTomogramReview( settings );
 
 		review.run();
-
 	}
-
-
 
 	public void setSettingsFromUI()
 	{
