@@ -68,7 +68,8 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 				BdvOptions.options()
 						.addTo( bdv )
 						.preferredSize( 800, 800 )
-						.transformEventHandlerFactory( new BehaviourTransformEventHandler3DWithoutRotation.BehaviourTransformEventHandler3DFactory() )
+						.transformEventHandlerFactory(
+								new BehaviourTransformEventHandler3DWithoutRotation.BehaviourTransformEventHandler3DFactory() )
 				).get( 0 );
 
 		setDisplayRange( bdvStackSource );
@@ -107,7 +108,8 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	{
 		final int numMipmapLevels = bdvStackSource.getSources().get( 0 ).getSpimSource().getNumMipmapLevels();
 
-		final RandomAccessibleInterval< T > lowResSource = (RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, numMipmapLevels - 1  );
+		final RandomAccessibleInterval< T > lowResSource =
+				(RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, numMipmapLevels - 1  );
 
 		final Cursor< T > cursor = Views.iterable( lowResSource ).cursor();
 

@@ -60,7 +60,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 				else if ( name.contains( "channel 2" ) ) color = Color.RED;
 				else if ( name.contains( "channel 3" ) ) color = Color.GREEN;
 				else if ( name.contains( "channel 4" ) ) color = Color.BLUE	;
-				else color = Color.MAGENTA;
+				else color = Color.GRAY;
 
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
 

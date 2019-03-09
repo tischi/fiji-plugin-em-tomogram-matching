@@ -10,6 +10,7 @@ import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
+import ij.process.ImageProcessor;
 import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
@@ -52,6 +53,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private RandomAccessibleInterval< T > projectedTomogram;
 	private double[] bestMatch;
 	private boolean isFirstTomogram;
+	private ImageProcessor overviewProcessorWithNoise;
+	private RandomAccessibleInterval< T > overviewForMatching;
 
 	public TomogramMatching( TomogramMatchingSettings settings, OpService opService )
 	{
@@ -66,7 +69,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 	public void run()
 	{
-		openAndRotateOverview();
+		openAndProcessOverviewForMatching();
 
 		createTomogramFileList();
 
@@ -103,16 +106,40 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	private void openAndRotateOverview()
+	private void openAndProcessOverviewForMatching()
 	{
 		loadOverview();
 
-		rotateOverview();
+		overviewForMatching = Views.subsample( overview, getOverviewSubSampling() );
 
-		overviewProcessor = asByteProcessor( overview );
+		overviewForMatching = rotateOverview( overviewForMatching );
+
+		overviewProcessor = asByteProcessor( overviewForMatching );
+
+		final ImagePlus overviewForMatching = new ImagePlus(
+				"Overview for matching", overviewProcessor );
+
+		//addNoiseToOverview( rotatedOverview );
 
 		if ( settings.showIntermediateResults )
-			new ImagePlus( "Rotated Overview", overviewProcessor  ).show();
+			overviewForMatching.show();
+
+	}
+
+	private long[] getOverviewSubSampling()
+	{
+		return new long[]{
+				settings.subSamplingDuringMatching,
+				settings.subSamplingDuringMatching };
+	}
+
+	private void addNoiseToOverview( ImagePlus rotatedOverview )
+	{
+		Utils.log( "Adding noise to overview to avoid strange " +
+				"edge effects during correlation.." );
+		final ImagePlus duplicate = rotatedOverview.duplicate();
+		IJ.run( duplicate, "Add Specified Noise...", "standard=10");
+		overviewProcessorWithNoise = duplicate.getProcessor();
 	}
 
 	private void loadOverview()
@@ -121,6 +148,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		setOverviewCalibration();
 
+		// TODO: perform 8-bit conversion later (only for matching)
 		overview = ImageIO.openImageAs8Bit( settings.overviewImage );
 	}
 
@@ -150,22 +178,24 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return gd.getNextNumber();
 	}
 
-	private void rotateOverview()
+	private RandomAccessibleInterval< T >
+	rotateOverview( RandomAccessibleInterval< T > overview )
 	{
 		if ( overview.numDimensions() == 2 )
 		{
 			final AffineTransform2D affineTransform2D = new AffineTransform2D();
 			affineTransform2D.rotate(
 					Math.toRadians( -settings.tomogramAngleDegrees ) );
-			overview = createTransformedView( overview, affineTransform2D );
+			return createTransformedView(overview, affineTransform2D );
 		}
-		else if ( overview.numDimensions() == 3 )
+		else if ( this.overview.numDimensions() == 3 )
 		{
 			final AffineTransform3D affineTransform3D = new AffineTransform3D();
 			affineTransform3D.rotate(
 					2, Math.toRadians( -settings.tomogramAngleDegrees ) );
-			overview = createTransformedView( overview, affineTransform3D );
+			return createTransformedView( this.overview, affineTransform3D );
 		}
+		return null;
 	}
 
 	public static < T extends NumericType< T > & NativeType< T > >
@@ -173,7 +203,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 			RandomAccessibleInterval< T > rai, InvertibleRealTransform transform )
 	{
 		RealRandomAccessible rra =
-				Views.interpolate( Views.extendBorder( rai ),
+				Views.interpolate( Views.extendZero( rai ),
 						new ClampingNLinearInterpolatorFactory() );
 
 		rra = RealViews.transform( rra, transform );
@@ -244,28 +274,41 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		final RandomAccessibleInterval< T > tomogram = openTomogram( tomogramFile );
 
-		createProjectedTomogram( tomogramFile, tomogram );
+		final RandomAccessibleInterval< T > subsample =
+				Views.subsample( tomogram, getTomogramSubSampling() );
+
+		createProjectedTomogram( tomogramFile, subsample );
 
 		createDownscaledTomogram( tomogramFile, projectedTomogram );
 
-		findBestMatchingPosition();
+		findBestMatchingPosition( downscaledTomogram );
 
 		if ( settings.saveResults )
 			saveTomogramAsBdv( tomogram, bestMatch, tomogramFile );
 	}
 
-	private void findBestMatchingPosition()
+	private long[] getTomogramSubSampling()
+	{
+		return new long[]{
+				settings.subSamplingDuringMatching,
+				settings.subSamplingDuringMatching,
+				1 };
+	}
+
+	private void findBestMatchingPosition( RandomAccessibleInterval< T > tomogram )
 	{
 		Utils.log( "Finding best match in overview image..." );
-		bestMatch = computePositionWithinOverviewImage( downscaledTomogram );
+		bestMatch = computePositionWithinOverviewImage( tomogram );
 
-		Utils.log( "Best match found at (upper left corner) [nm]: " + bestMatch[ 0 ] + ", " + bestMatch[ 1 ] );
+		Utils.log( "Best match found at (upper left corner) [nm]: "
+				+ bestMatch[ 0 ] + ", " + bestMatch[ 1 ] );
 		Utils.log( "Best match found at (upper left corner) [pixels]: " +
 				(int) ( bestMatch[ 0 ] / settings.overviewCalibrationNanometer ) + ", " +
 				(int) ( bestMatch[ 1 ] / settings.overviewCalibrationNanometer ) );
 	}
 
-	private void createProjectedTomogram( File tomogramFile, RandomAccessibleInterval< T > tomogram )
+	private void createProjectedTomogram(
+			File tomogramFile, RandomAccessibleInterval< T > tomogram )
 	{
 		// avg projection
 		// TODO: to speed this up one could subsample before
@@ -291,7 +334,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Scaling to overview image resolution..." );
 		final double[] scaling = getScaling( projected.numDimensions() );
 		downscaledTomogram = Scalings.createRescaledArrayImg( projected, scaling );
-		showIntermediateResult( downscaledTomogram, "scaled-projection-" + tomogramFile.getName() );
+		showIntermediateResult( downscaledTomogram,
+				"scaled-projection-" + tomogramFile.getName() );
 	}
 
 	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
@@ -311,13 +355,14 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return ImageIO.openImageAs8Bit( tomogramFile );
 	}
 
-	private double[] computePositionWithinOverviewImage( RandomAccessibleInterval< T > tomo )
+	private double[] computePositionWithinOverviewImage(
+			RandomAccessibleInterval< T > tomogram )
 	{
-		final ByteProcessor tomoByteProcessor = Utils.asByteProcessor( tomo );
+		final ByteProcessor tomogramProcessor = Utils.asByteProcessor( tomogram );
 
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
-				tomoByteProcessor,
+				tomogramProcessor,
 				NORMALIZED_CORRELATION,
 				false );
 
@@ -326,10 +371,12 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		if ( settings.showIntermediateResults )
 			correlationImp.show();
 
-		Utils.log( "Removing spurious maxima from correlation by minimum filter of radius 2..." );
-		IJ.run( correlationImp, "Minimum...", "radius=2" );
+		// TODO: why is this only necessary here and not when running within Fiji?
+//		Utils.log( "Removing spurious maxima from correlation by minimum filter of radius 2..." );
+//		IJ.run( correlationImp, "Minimum...", "radius=2" );
 
-		final int[] position = TemplateMatchingPlugin.findMax( correlationImp.getProcessor(), 0 );
+		final int[] position = TemplateMatchingPlugin.findMax(
+				correlationImp.getProcessor(), 0 );
 
 		double[] nanometerPosition = new double[ 3 ];
 		for ( int i = 0; i < position.length; ++i )

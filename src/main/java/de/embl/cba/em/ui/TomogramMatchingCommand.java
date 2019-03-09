@@ -86,7 +86,8 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 		settings.tomogramInputDirectory = tomogramInputDirectory;
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
-		settings.confirmScalingViaUI = true;
+		settings.confirmScalingViaUI = false;
+		settings.subSamplingDuringMatching = 4;
 //		settings.fillingValue = fillingValue;
 	}
 
