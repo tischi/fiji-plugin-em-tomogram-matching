@@ -58,6 +58,9 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 	@Parameter ( label = "Save Tomogram Images" )
 	public boolean saveResults = settings.saveResults;
 
+	@Parameter ( label = "Pixel Spacing during Matching [nm]" )
+	public double pixelSpacingDuringMatching = settings.matchingPixelSpacingNanometer;
+
 	@Parameter
 	public boolean showIntermediateResults = settings.showIntermediateResults;
 
@@ -87,7 +90,7 @@ public class TomogramMatchingCommand<T extends RealType<T> & NativeType< T > > i
 		settings.tomogramAngleDegrees = tomogramAngleDegrees;
 		settings.showIntermediateResults = showIntermediateResults;
 		settings.confirmScalingViaUI = false;
-		settings.subSamplingDuringMatching = 4;
+		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 //		settings.fillingValue = fillingValue;
 	}
 

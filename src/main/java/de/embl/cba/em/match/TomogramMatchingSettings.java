@@ -15,5 +15,5 @@ public class TomogramMatchingSettings
 	public boolean saveOverview = true;
 	public int fillingValue = 24674;
 	public boolean confirmScalingViaUI;
-	public int subSamplingDuringMatching;
+	public double matchingPixelSpacingNanometer;
 }
