@@ -290,6 +290,7 @@ public class BdvRaiVolumeExport< T extends RealType< T >  & NativeType< T > >
 								new UnsignedShortType( ) );
 					}
 
+					return null;
 
 				}
 
