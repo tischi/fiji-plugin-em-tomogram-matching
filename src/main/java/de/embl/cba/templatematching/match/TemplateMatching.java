@@ -3,16 +3,12 @@ package de.embl.cba.templatematching.match;
 import de.embl.cba.templatematching.CalibratedRAI;
 import de.embl.cba.templatematching.ImageIO;
 import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.bdv.BdvExport;
+import de.embl.cba.templatematching.bdv.BdvImagePlusExport;
 import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.GenericDialog;
-import ij.gui.Overlay;
-import ij.gui.Roi;
-import ij.gui.TextRoi;
-import ij.process.ByteProcessor;
+import ij.gui.*;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import net.imglib2.FinalInterval;
@@ -26,6 +22,8 @@ import net.imglib2.realtransform.RealViews;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
@@ -35,7 +33,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static de.embl.cba.templatematching.Utils.asByteProcessor;
 import static de.embl.cba.templatematching.Utils.asFloatProcessor;
 import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
@@ -87,7 +84,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	public boolean confirmSaving()
 	{
 		final GenericDialog gd =
-				new GenericDialog( "Save results" );
+				new NonBlockingGenericDialog( "Save results" );
+
 		gd.addMessage( "Would you like to " +
 				"export the matched templates as multi-resolution images;\n" +
 				"for viewing with the " +
@@ -274,7 +272,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		String path = settings.outputDirectory + File.separator + "overview";
 		imagePlus.setTitle( "overview" );
-		BdvExport.export(
+		BdvImagePlusExport.export(
 				imagePlus, path, calibration, "nanometer", offset );
 
 	}
@@ -487,7 +485,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		imagePlus.setTitle( templateFile.getName().split( "\\." )[ 0 ] );
 
-		BdvExport.export(
+		BdvImagePlusExport.export(
 				imagePlus,
 				settings.outputDirectory + File.separator + templateFile.getName(),
 				getTemplateCalibration(),

@@ -10,6 +10,8 @@ import bdv.spimdata.SpimDataMinimal;
 import bdv.spimdata.XmlIoSpimDataMinimal;
 import ij.IJ;
 import ij.ImagePlus;
+import mpicbg.spim.data.generic.sequence.BasicImgLoader;
+import mpicbg.spim.data.generic.sequence.BasicSetupImgLoader;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -20,13 +22,15 @@ import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedShortType;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BdvExport
+public class BdvImagePlusExport
 {
 
 	public static void export( ImagePlus imp,
@@ -146,7 +150,8 @@ public class BdvExport
 			if ( previousLevel < 0 )
 				return false;
 
-			if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+			if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg )
+					/ WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
 				return true;
 
 			if ( isVirtual )
@@ -176,7 +181,15 @@ public class BdvExport
 
 		final ArrayList< Partition > partitions;
 		partitions = null;
-		WriteSequenceToHdf5.writeHdf5File( seq, perSetupExportMipmapInfo, true, hdf5File, loopbackHeuristic, afterEachPlane, numCellCreatorThreads, new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
+		WriteSequenceToHdf5.writeHdf5File(
+				seq,
+				perSetupExportMipmapInfo,
+				true,
+				hdf5File,
+				loopbackHeuristic,
+				afterEachPlane,
+				numCellCreatorThreads,
+				new SubTaskProgressWriter( progressWriter, 0, 0.95 ) );
 
 		// write xml sequence description
 		final Hdf5ImageLoader hdf5Loader = new Hdf5ImageLoader( hdf5File, partitions, null, false );
@@ -188,7 +201,8 @@ public class BdvExport
 				registrations.add( new ViewRegistration( t, s, sourceTransform ) );
 
 		final File basePath = xmlFile.getParentFile();
-		final SpimDataMinimal spimData = new SpimDataMinimal( basePath, seqh5, new ViewRegistrations( registrations ) );
+		final SpimDataMinimal spimData =
+				new SpimDataMinimal( basePath, seqh5, new ViewRegistrations( registrations ) );
 
 		try
 		{
@@ -220,4 +234,5 @@ public class BdvExport
 		}
 		return imgLoader;
 	}
+
 }

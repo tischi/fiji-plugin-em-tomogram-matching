@@ -43,21 +43,21 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 	@Parameter ( label = "Overview Image" )
 	public File overviewImage = settings.overviewImageFile;
 
-	@Parameter ( label = "Tomograms Directory", style = "directory" )
+	@Parameter ( label = "Templates Directory", style = "directory" )
 	public File tomogramInputDirectory = settings.templatesInputDirectory;
 
-	@Parameter ( label = "Angle between Overview and Tomograms" )
+	@Parameter ( label = "Angle between Overview and Templates" )
 	public double tomogramAngleDegrees = settings.overviewAngleDegrees;
 
 	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory = settings.outputDirectory;
 
-	@Parameter ( label = "Matching Resolution [nm]" )
+	@Parameter ( label = "Pixel Spacing during Matching [nm]" )
 	public double pixelSpacingDuringMatching =
 			settings.matchingPixelSpacingNanometer;
 
-	@Parameter ( label = "Confirm Results before Saving" )
-	boolean confirmResultsBeforeSaving = true;
+	@Parameter ( label = "Run Silent" )
+	boolean runSilent = false;
 
 	public void run()
 	{
@@ -67,7 +67,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 
 		matching.run();
 
-		IJ.showMessage( "Tomogram matching finished!" );
+		IJ.showMessage( "Template matching finished!" );
 	}
 
 
@@ -77,7 +77,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.overviewImageFile = overviewImage;
 		settings.templatesInputDirectory = tomogramInputDirectory;
 		settings.overviewAngleDegrees = tomogramAngleDegrees;
-		settings.showIntermediateResults = confirmResultsBeforeSaving;
+		settings.showIntermediateResults = !runSilent;
 		settings.confirmScalingViaUI = false;
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 	}
