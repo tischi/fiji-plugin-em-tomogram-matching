@@ -1,4 +1,4 @@
-package de.embl.cba.em;
+package de.embl.cba.templatematching;
 
 public class Constants
 {

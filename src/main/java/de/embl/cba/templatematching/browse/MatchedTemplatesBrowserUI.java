@@ -1,14 +1,14 @@
-package de.embl.cba.em.browse;
+package de.embl.cba.templatematching.browse;
 
 import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import bdv.viewer.state.SourceState;
 import de.embl.cba.bdv.utils.*;
-import de.embl.cba.em.Utils;
+import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import de.embl.cba.em.UiUtils;
+import de.embl.cba.templatematching.UiUtils;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,10 +1,10 @@
-package de.embl.cba.em.browse;
+package de.embl.cba.templatematching.browse;
 
 import bdv.spimdata.XmlIoSpimDataMinimal;
 import bdv.util.*;
-import de.embl.cba.em.bdv.BehaviourTransformEventHandler3DWithoutRotation;
-import de.embl.cba.em.bdv.ImageSource;
-import de.embl.cba.em.Utils;
+import de.embl.cba.templatematching.bdv.BehaviourTransformEventHandler3DWithoutRotation;
+import de.embl.cba.templatematching.bdv.ImageSource;
+import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.SpimData;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;

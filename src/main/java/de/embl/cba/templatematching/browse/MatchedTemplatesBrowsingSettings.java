@@ -1,4 +1,4 @@
-package de.embl.cba.em.browse;
+package de.embl.cba.templatematching.browse;
 
 import java.io.File;
 

@@ -1,4 +1,4 @@
-package de.embl.cba.em.bdv;
+package de.embl.cba.templatematching.bdv;
 
 import bdv.BehaviourTransformEventHandler;
 import bdv.BehaviourTransformEventHandlerFactory;
@@ -80,7 +80,7 @@ public class BehaviourTransformEventHandler3DWithoutRotation implements Behaviou
 
 	/**
 	 * Screen coordinates to keep centered while zooming or rotating with the
-	 * keyboard. These are set to <em>(canvasW/2, canvasH/2)</em>
+	 * keyboard. These are set to <templatematching>(canvasW/2, canvasH/2)</templatematching>
 	 */
 	protected int centerX = 0, centerY = 0;
 

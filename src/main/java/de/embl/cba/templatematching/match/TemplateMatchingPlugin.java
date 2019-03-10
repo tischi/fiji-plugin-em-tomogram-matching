@@ -1,4 +1,4 @@
-package de.embl.cba.em.match;
+package de.embl.cba.templatematching.match;
 
 import ij.*;
 import ij.process.*;
@@ -95,7 +95,7 @@ public class TemplateMatchingPlugin implements PlugIn {
 
 		long startTime = System.currentTimeMillis();
 
-		FloatProcessor rFp = doMatch(img1, img2, method, showR);
+		FloatProcessor rFp = doMatch(img1, img2, method);
 
 		long elapsedTime = System.currentTimeMillis() - startTime;
 

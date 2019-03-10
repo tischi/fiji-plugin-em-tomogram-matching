@@ -19,7 +19,7 @@ public class BdvExport
 		String outputFilename = "g22_t27-downScaled";
 		String outputPath = outputDirectory + File.pathSeparator + outputFilename;
 
-		de.embl.cba.em.bdv.BdvExport.export( imp,
+		de.embl.cba.templatematching.bdv.BdvExport.export( imp,
 				outputDirectory + File.pathSeparator + outputFilename,
 				new double[]{1,1,1},
 				"micrometer",

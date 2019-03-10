@@ -1,4 +1,4 @@
-package de.embl.cba.em.bdv;
+package de.embl.cba.templatematching.bdv;
 
 import bdv.util.BdvSource;
 import mpicbg.spim.data.SpimData;

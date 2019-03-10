@@ -1,4 +1,4 @@
-package de.embl.cba.em.match;
+package de.embl.cba.templatematching.match;
 
 import java.io.File;
 

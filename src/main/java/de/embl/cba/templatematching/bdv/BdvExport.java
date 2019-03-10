@@ -1,4 +1,4 @@
-package de.embl.cba.em.bdv;
+package de.embl.cba.templatematching.bdv;
 
 import bdv.export.*;
 import bdv.ij.export.imgloader.ImagePlusImgLoader;

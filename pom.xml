@@ -8,11 +8,11 @@
 		<version>25.0.0</version>
 	</parent>
 
-	<artifactId>fiji-plugin-tomogramMatching</artifactId>
-	<version>0.2.05</version>
-	<url>https://github.com/imglib/fiji-plugin-em-tomogram-matching/issues</url>
+	<artifactId>fiji-plugin-multiTemplateMatching</artifactId>
+	<version>0.2.06</version>
+	<url>https://github.com/tischi/fiji-plugin-em-tomogram-matching/issues</url>
 
-	<name>Fiji Plugin EM Tomogram Matching</name>
+	<name>Fiji Plugin Multi Template Matching</name>
 	<description>TODO</description>
 	<inceptionYear>2018</inceptionYear>
 	<organization>
@@ -69,7 +69,7 @@
 	</ciManagement>
 
 	<properties>
-		<package-name>de.embl.cba.em-tomogram-matching</package-name>
+		<package-name>de.embl.cba.templatematching</package-name>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>EMBL</license.copyrightOwners>
 		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>

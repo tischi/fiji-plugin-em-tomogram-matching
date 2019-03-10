@@ -1,7 +1,7 @@
-package de.embl.cba.em.ui;
+package de.embl.cba.templatematching.ui;
 
-import de.embl.cba.em.browse.MatchedTemplatesBrowser;
-import de.embl.cba.em.browse.MatchedTemplatesBrowsingSettings;
+import de.embl.cba.templatematching.browse.MatchedTemplatesBrowser;
+import de.embl.cba.templatematching.browse.MatchedTemplatesBrowsingSettings;
 import ij.ImagePlus;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;

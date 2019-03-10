@@ -1,7 +1,7 @@
-package de.embl.cba.em.ui;
+package de.embl.cba.templatematching.ui;
 
-import de.embl.cba.em.match.TemplateMatching;
-import de.embl.cba.em.match.TemplateMatchingSettings;
+import de.embl.cba.templatematching.match.TemplateMatching;
+import de.embl.cba.templatematching.match.TemplateMatchingSettings;
 import ij.IJ;
 import ij.ImagePlus;
 import net.imagej.DatasetService;

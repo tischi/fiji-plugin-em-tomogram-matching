@@ -1,10 +1,10 @@
-package de.embl.cba.em.match;
+package de.embl.cba.templatematching.match;
 
-import de.embl.cba.em.CalibratedRAI;
-import de.embl.cba.em.ImageIO;
-import de.embl.cba.em.Utils;
-import de.embl.cba.em.bdv.BdvExport;
-import de.embl.cba.em.imageprocessing.Projection;
+import de.embl.cba.templatematching.CalibratedRAI;
+import de.embl.cba.templatematching.ImageIO;
+import de.embl.cba.templatematching.Utils;
+import de.embl.cba.templatematching.bdv.BdvExport;
+import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
 import ij.ImagePlus;
@@ -35,9 +35,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static de.embl.cba.em.Utils.asByteProcessor;
-import static de.embl.cba.em.Utils.asFloatProcessor;
-import static de.embl.cba.em.Utils.showIntermediateResult;
+import static de.embl.cba.templatematching.Utils.asByteProcessor;
+import static de.embl.cba.templatematching.Utils.asFloatProcessor;
+import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
 
 public class TemplateMatching < T extends RealType< T > & NativeType< T > >
