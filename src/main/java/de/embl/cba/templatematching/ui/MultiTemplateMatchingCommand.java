@@ -56,6 +56,9 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 	public double pixelSpacingDuringMatching =
 			settings.matchingPixelSpacingNanometer;
 
+	@Parameter ( label = "All Images fit into RAM (faster writing)" )
+	boolean allTemplatesFitInRAM = false;
+
 	@Parameter ( label = "Run Silent" )
 	boolean runSilent = false;
 
@@ -80,6 +83,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.showIntermediateResults = !runSilent;
 		settings.confirmScalingViaUI = false;
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
+		settings.allTemplatesFitInRAM = allTemplatesFitInRAM;
 	}
 
 

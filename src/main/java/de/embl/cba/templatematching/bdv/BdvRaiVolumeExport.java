@@ -25,6 +25,7 @@ import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.util.Util;
+import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,21 +37,17 @@ public class BdvRaiVolumeExport< T extends RealType< T >  & NativeType< T > >
 
 	public void export(
 			RandomAccessibleInterval< T > rai,
-			String filePath,
+			String filePathWithoutExtension,
 			double[] calibration,
 			String calibrationUnit,
 			double[] translation )
 	{
 
-		final File hdf5File = new File( filePath + ".h5" );
-		final File xmlFile = new File( filePath + ".xml" );
-
+		final File hdf5File = new File( filePathWithoutExtension + ".h5" );
+		final File xmlFile = new File( filePathWithoutExtension + ".xml" );
 
 		if ( rai.numDimensions() < 3 )
-		{
-			System.out.println( "Image must be at least 3-dimensional!" );
-			return;
-		}
+			rai = Views.addDimension( rai, 0, 0);
 
 		// set up calibration
 		String pixelUnit = getPixelUnit( calibrationUnit );

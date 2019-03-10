@@ -10,8 +10,7 @@ public class TemplateMatchingSettings
 	public double overviewCalibrationNanometer = 10.03;
 	public double overviewAngleDegrees = 11.5;
 	public boolean showIntermediateResults = false;
-	public boolean saveResults = true;
-	public boolean saveOverview = true;
 	public boolean confirmScalingViaUI;
 	public double matchingPixelSpacingNanometer;
+	public boolean allTemplatesFitInRAM;
 }
