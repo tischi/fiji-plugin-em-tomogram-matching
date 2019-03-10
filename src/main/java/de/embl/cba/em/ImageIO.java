@@ -6,12 +6,10 @@ import ij.measure.Calibration;
 import ij.process.ImageConverter;
 import ij.process.StackConverter;
 import loci.common.services.ServiceFactory;
-import loci.formats.FormatException;
 import loci.formats.IFormatReader;
 import loci.formats.ImageReader;
 import loci.formats.meta.IMetadata;
 import loci.formats.services.OMEXMLService;
-import loci.plugins.BF;
 import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
@@ -21,7 +19,6 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
-import java.io.IOException;
 
 public class ImageIO
 {
@@ -30,7 +27,7 @@ public class ImageIO
 	{
 		Utils.log( "Opening " + file.getName() + "...");
 
-		ImagePlus imp = openWithBioFormats( file );
+		ImagePlus imp = withBFopenImp( file );
 
 		if ( imp == null )
 		{
@@ -76,7 +73,7 @@ public class ImageIO
 		return voxelSize;
 	}
 
-	public static ImagePlus openWithBioFormats( File file )
+	public static ImagePlus withBFopenImp( File file )
 	{
 		try
 		{
@@ -113,7 +110,7 @@ public class ImageIO
 
 			if ( voxelSize == -1 )
 			{
-				Utils.error( "Could not interpret calibration unit of "
+				Utils.error( "Could not interpret nanometerCalibration unit of "
 						+ file.getName() +
 						"; unit found was: "
 						+ imagePlus.getCalibration().getUnit() );
@@ -156,7 +153,7 @@ public class ImageIO
 
 			if ( voxelSize == -1 )
 			{
-				Utils.error( "Could not interpret calibration unit of " + file.getName() +
+				Utils.error( "Could not interpret nanometerCalibration unit of " + file.getName() +
 						"; unit found was: " + unit );
 			}
 
@@ -170,5 +167,17 @@ public class ImageIO
 		}
 
 		return 0.0;
+	}
+
+	public static  < T extends RealType< T > & NativeType< T > >
+	CalibratedRAI< T > withBFopenRAI( File file )
+	{
+		Utils.log( "Opening " + file.getName() + "...");
+
+		ImagePlus imp = withBFopenImp( file );
+
+		final CalibratedRAI< T > calibratedRAI = new CalibratedRAI<>( imp );
+
+		return calibratedRAI;
 	}
 }

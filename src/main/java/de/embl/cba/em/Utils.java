@@ -109,10 +109,9 @@ public class Utils
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	FloatProcessor asFloatProcessor(
-			RandomAccessibleInterval< T > rai, int fillingValue )
+	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai )
 	{
-		Utils.log( "Converting Image to FloatProcessor..." );
+		Utils.log( "Converting RandomAccessibleInterval to FloatProcessor..." );
 
 		RandomAccessibleInterval< T > rai2D = rai;
 
@@ -129,15 +128,7 @@ public class Utils
 		int i = 0;
 		while( inputCursor.hasNext() )
 		{
-			final float realDouble = ( float ) inputCursor.next().getRealDouble();
-			if ( realDouble != fillingValue )
-			{
-				floats[ i++ ] = realDouble;
-			}
-			else
-			{
-				i++;
-			}
+			floats[ i++ ] = ( float ) inputCursor.next().getRealDouble();
 		}
 
 		final FloatProcessor floatProcessor = new FloatProcessor( w, h, floats );
@@ -473,16 +464,6 @@ public class Utils
 		return imagePlus;
 	}
 
-	public static  < T extends RealType< T > & NativeType< T > >
-	RandomAccessibleInterval< T > openImage( File file )
-	{
-		Utils.log( "Opening " + file.getName() + "...");
-
-		ImagePlus imp = ImageIO.openWithBioFormats( file );
-
-		return ImageJFunctions.wrapReal( imp );
-	}
-
 
 	public static  < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > openRandomAccessibleIntervalUsingBF( File file )
@@ -508,7 +489,7 @@ public class Utils
 
 	public static double asNanometers( double value, String unit )
 	{
-		double voxelSize = -1;
+		double voxelSize = value;
 
 		if ( unit != null )
 		{

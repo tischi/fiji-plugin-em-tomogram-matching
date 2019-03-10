@@ -58,13 +58,14 @@ public class BdvExport
 			return;
 		}
 
-		// get calibration and image radius
+		// get nanometerCalibration and image radius
 		final double pw = calibration[ 0 ];
 		final double ph = calibration[ 1 ];
 		final double pd = calibration[ 2 ];
 		String punit = calibrationUnit;
 		if ( punit == null || punit.isEmpty() ) punit = "px";
-		final FinalVoxelDimensions voxelSize = new FinalVoxelDimensions( punit, pw, ph, pd );
+		final FinalVoxelDimensions voxelSize =
+				new FinalVoxelDimensions( punit, pw, ph, pd );
 		final int w = imp.getWidth();
 		final int h = imp.getHeight();
 		final int d = imp.getNSlices();
@@ -82,9 +83,10 @@ public class BdvExport
 		final int numTimepoints = imp.getNFrames();
 		final int numSetups = imp.getNChannels();
 
-		// create SourceTransform from the images calibration
+		// create SourceTransform from the images nanometerCalibration
 		final AffineTransform3D sourceTransform = new AffineTransform3D();
-		sourceTransform.set( pw, 0, 0, 0, 0, ph, 0, 0, 0, 0, pd, 0 );
+		sourceTransform.set( pw, 0, 0, 0,
+				0, ph, 0, 0, 0, 0, pd, 0 );
 		sourceTransform.translate( translation );
 
 		// write hdf5
@@ -102,14 +104,24 @@ public class BdvExport
 			setup.setAttribute( new Channel( s + 1 ) );
 			setups.put( s, setup );
 		}
+
 		final ArrayList< TimePoint > timepoints = new ArrayList<>( numTimepoints );
+
 		for ( int t = 0; t < numTimepoints; ++t )
 			timepoints.add( new TimePoint( t ) );
-		final SequenceDescriptionMinimal seq = new SequenceDescriptionMinimal( new TimePoints( timepoints ), setups, imgLoader, null );
+
+		final SequenceDescriptionMinimal seq =
+				new SequenceDescriptionMinimal(
+						new TimePoints( timepoints ),
+						setups, imgLoader, null );
 
 		Map< Integer, ExportMipmapInfo > perSetupExportMipmapInfo;
 		perSetupExportMipmapInfo = new HashMap<>();
-		final ExportMipmapInfo mipmapInfo = new ExportMipmapInfo( autoMipmapSettings.getExportResolutions(), autoMipmapSettings.getSubdivisions() );
+		final ExportMipmapInfo mipmapInfo =
+				new ExportMipmapInfo(
+						autoMipmapSettings.getExportResolutions(),
+						autoMipmapSettings.getSubdivisions() );
+
 		for ( final BasicViewSetup setup : seq.getViewSetupsOrdered() )
 			perSetupExportMipmapInfo.put( setup.getId(), mipmapInfo );
 
@@ -124,45 +136,41 @@ public class BdvExport
 		final long planeSizeInBytes = imp.getWidth() * imp.getHeight() * imp.getBytesPerPixel();
 		final long ijMaxMemory = IJ.maxMemory();
 		final int numCellCreatorThreads = Math.max( 1, PluginHelper.numThreads() - 1 );
-		final WriteSequenceToHdf5.LoopbackHeuristic loopbackHeuristic = new WriteSequenceToHdf5.LoopbackHeuristic()
+		final WriteSequenceToHdf5.LoopbackHeuristic loopbackHeuristic =
+				( originalImg,
+				  factorsToOriginalImg,
+				  previousLevel,
+				  factorsToPreviousLevel,
+				  chunkSize ) ->
 		{
-			@Override
-			public boolean decide( final RandomAccessibleInterval< ? > originalImg, final int[] factorsToOriginalImg, final int previousLevel, final int[] factorsToPreviousLevel, final int[] chunkSize )
-			{
-				if ( previousLevel < 0 )
-					return false;
-
-				if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
-					return true;
-
-				if ( isVirtual )
-				{
-					final long requiredCacheSize = planeSizeInBytes * factorsToOriginalImg[ 2 ] * chunkSize[ 2 ];
-					if ( requiredCacheSize > ijMaxMemory / 4 )
-						return true;
-				}
-
+			if ( previousLevel < 0 )
 				return false;
+
+			if ( WriteSequenceToHdf5.numElements( factorsToOriginalImg ) / WriteSequenceToHdf5.numElements( factorsToPreviousLevel ) >= 8 )
+				return true;
+
+			if ( isVirtual )
+			{
+				final long requiredCacheSize = planeSizeInBytes * factorsToOriginalImg[ 2 ] * chunkSize[ 2 ];
+				if ( requiredCacheSize > ijMaxMemory / 4 )
+					return true;
 			}
+
+			return false;
 		};
 
-		final WriteSequenceToHdf5.AfterEachPlane afterEachPlane = new WriteSequenceToHdf5.AfterEachPlane()
+		final WriteSequenceToHdf5.AfterEachPlane afterEachPlane = usedLoopBack ->
 		{
-			@Override
-			public void afterEachPlane( final boolean usedLoopBack )
+			if ( !usedLoopBack && isVirtual )
 			{
-				if ( !usedLoopBack && isVirtual )
-				{
-					final long free = Runtime.getRuntime().freeMemory();
-					final long total = Runtime.getRuntime().totalMemory();
-					final long max = Runtime.getRuntime().maxMemory();
-					final long actuallyFree = max - total + free;
+				final long free = Runtime.getRuntime().freeMemory();
+				final long total = Runtime.getRuntime().totalMemory();
+				final long max = Runtime.getRuntime().maxMemory();
+				final long actuallyFree = max - total + free;
 
-					if ( actuallyFree < max / 2 )
-						imgLoader.clearCache();
-				}
+				if ( actuallyFree < max / 2 )
+					imgLoader.clearCache();
 			}
-
 		};
 
 

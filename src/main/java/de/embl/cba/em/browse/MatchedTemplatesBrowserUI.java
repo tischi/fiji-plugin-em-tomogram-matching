@@ -21,7 +21,7 @@ import static de.embl.cba.bdv.utils.BdvUserInterfaceUtils.addSourcesDisplaySetti
 import static de.embl.cba.bdv.utils.BdvUtils.zoomToSource;
 import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
 
-public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T > > extends JPanel
+public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T > > extends JPanel
 {
 	JFrame frame;
 	JComboBox tomogramComboBox;
@@ -29,7 +29,7 @@ public class MatchedTomogramReviewUI < T extends NativeType< T > & RealType< T >
 	private VoxelDimensions tomogramVoxelDimensions;
 
 
-	public MatchedTomogramReviewUI( Bdv bdv )
+	public MatchedTemplatesBrowserUI( Bdv bdv )
 	{
 		this.bdv = bdv;
 	}

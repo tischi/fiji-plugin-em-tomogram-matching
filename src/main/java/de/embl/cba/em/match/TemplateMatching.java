@@ -1,5 +1,6 @@
 package de.embl.cba.em.match;
 
+import de.embl.cba.em.CalibratedRAI;
 import de.embl.cba.em.ImageIO;
 import de.embl.cba.em.Utils;
 import de.embl.cba.em.bdv.BdvExport;
@@ -10,10 +11,10 @@ import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.gui.Overlay;
 import ij.gui.Roi;
+import ij.gui.TextRoi;
 import ij.process.ByteProcessor;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
-import net.imagej.ops.OpService;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
@@ -35,10 +36,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static de.embl.cba.em.Utils.asByteProcessor;
+import static de.embl.cba.em.Utils.asFloatProcessor;
 import static de.embl.cba.em.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
 
-public class TomogramMatching < T extends RealType< T > & NativeType< T > >
+public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 {
 
 	public static final int Z_DIMENSION = 2;
@@ -46,48 +48,70 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	public static final int CORRELATION = 4;
 	public static final int NORMALIZED_CORRELATION = 5;
 
-	private final TomogramMatchingSettings settings;
-	private ArrayList< File > tomogramFiles;
-	private ByteProcessor overviewProcessor;
+	private final TemplateMatchingSettings settings;
+	private ArrayList< File > templateFiles;
+	private ImageProcessor overviewProcessor;
 	private RandomAccessibleInterval< T > overview;
-	private RandomAccessibleInterval< T > downscaledTomogram;
-	private boolean isFirstTomogram;
-	private ImageProcessor overviewProcessorWithNoise;
 	private RandomAccessibleInterval< T > overviewForMatching;
-	private Overlay matchings;
+	private Overlay matchingOverlay;
 	private ImagePlus overviewForMatchingImagePlus;
-	private int subSamplingOverviewPixelUnits;
+	private int subSampling;
+	private int templateIndex;
+	private double templateCalibrationNanometer;
+	private ArrayList< int[] > matchingPositions;
 
-	public TomogramMatching( TomogramMatchingSettings settings, OpService opService )
+	public TemplateMatching( TemplateMatchingSettings settings )
 	{
 		this.settings = settings;
-
-		isFirstTomogram = true;
+		templateIndex = 0;
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
 	public void run()
 	{
-		openAndProcessOverviewForMatching();
+		openAndProcessOverview();
 
-		createTomogramFileList();
+		matchTemplates();
 
-		matchTomograms();
-
-		if ( settings.saveOverview ) saveOverviewAsBdv();
+		processResults();
 	}
 
-	private void createTomogramFileList()
+	public void processResults()
 	{
-		File[] files = settings.tomogramInputDirectory.listFiles();
+		if ( settings.showIntermediateResults )
+			if ( ! confirmSaving() ) return;
 
-		tomogramFiles = new ArrayList<>();
+		saveImagesAsBdvHdf5();
+	}
+
+	public boolean confirmSaving()
+	{
+		final GenericDialog gd =
+				new GenericDialog( "Save results" );
+		gd.addMessage( "Would you like to " +
+				"export the matched templates as multi-resolution images;\n" +
+				"for viewing with the " +
+				"Template Browsing plugin?" );
+
+		gd.showDialog();
+
+		if ( gd.wasCanceled() )
+			return false;
+
+		return true;
+	}
+
+	private void createTemplateFileList()
+	{
+		File[] files = settings.templatesInputDirectory.listFiles();
+
+		templateFiles = new ArrayList<>();
 
 		for ( File file : files )
 		{
 			if ( isValid( file ) )
 			{
-				tomogramFiles.add( file );
+				templateFiles.add( file );
 			}
 		}
 	}
@@ -97,17 +121,21 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return true;
 	}
 
-	private void matchTomograms()
+	private void matchTemplates()
 	{
-		matchings = new Overlay();
+		matchingOverlay = new Overlay();
+		matchingPositions = new ArrayList<>();
 
-		for ( File tomogramFile : tomogramFiles )
+		createTemplateFileList();
+
+		for ( File templateFile : templateFiles )
 		{
-			matchTomogram( tomogramFile );
+			matchTemplate( templateFile );
+			templateIndex++;
 		}
 	}
 
-	private void openAndProcessOverviewForMatching()
+	private void openAndProcessOverview()
 	{
 		loadOverview();
 
@@ -115,7 +143,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatching = rotateOverview( overviewForMatching );
 
-		overviewProcessor = asByteProcessor( overviewForMatching );
+		overviewProcessor = asFloatProcessor( overviewForMatching );
 
 		overviewForMatchingImagePlus = new ImagePlus(
 				"Overview for matching", overviewProcessor );
@@ -130,8 +158,8 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	private long[] getOverviewSubSampling()
 	{
 		return new long[]{
-				subSamplingOverviewPixelUnits,
-				subSamplingOverviewPixelUnits };
+				subSampling,
+				subSampling };
 	}
 
 	private void addNoiseToOverview( ImagePlus rotatedOverview )
@@ -140,32 +168,16 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 				"edge effects during correlation.." );
 		final ImagePlus duplicate = rotatedOverview.duplicate();
 		IJ.run( duplicate, "Add Specified Noise...", "standard=10");
-		overviewProcessorWithNoise = duplicate.getProcessor();
+//		overviewProcessorWithNoise = duplicate.getProcessor();
 	}
 
 	private void loadOverview()
 	{
 		Utils.log( "Opening overview image..." );
 
-		setOverviewCalibration();
+		final CalibratedRAI< T > calibratedRAI = ImageIO.withBFopenRAI( settings.overviewImageFile );
 
-		setSubSampling();
-
-		// TODO: perform 8-bit conversion later (only for matching)
-		overview = ImageIO.openImageAs8Bit( settings.overviewImage );
-	}
-
-	private void setSubSampling()
-	{
-		subSamplingOverviewPixelUnits = (int)
-				Math.floor( settings.matchingPixelSpacingNanometer
-						/ settings.overviewCalibrationNanometer );
-	}
-
-	private void setOverviewCalibration()
-	{
-		settings.overviewCalibrationNanometer =
-				ImageIO.getNanometerPixelWidth( settings.overviewImage );
+		settings.overviewCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
 
 		if ( settings.confirmScalingViaUI )
 		{
@@ -174,6 +186,23 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 					settings.overviewCalibrationNanometer,
 					"Overview");
 		}
+
+		setSubSampling();
+
+		overview = calibratedRAI.rai;
+	}
+
+	private void setSubSampling()
+	{
+		subSampling = (int)
+				Math.ceil( settings.matchingPixelSpacingNanometer
+						/ settings.overviewCalibrationNanometer );
+
+		Utils.log( "Subsampling: " + subSampling );
+	}
+
+	private void setOverviewCalibration()
+	{
 	}
 
 	private double confirmImageScalingUI( double value, final String imageName )
@@ -195,14 +224,14 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		{
 			final AffineTransform2D affineTransform2D = new AffineTransform2D();
 			affineTransform2D.rotate(
-					Math.toRadians( -settings.tomogramAngleDegrees ) );
+					Math.toRadians( -settings.overviewAngleDegrees ) );
 			return createTransformedView(overview, affineTransform2D );
 		}
 		else if ( this.overview.numDimensions() == 3 )
 		{
 			final AffineTransform3D affineTransform3D = new AffineTransform3D();
 			affineTransform3D.rotate(
-					2, Math.toRadians( -settings.tomogramAngleDegrees ) );
+					2, Math.toRadians( -settings.overviewAngleDegrees ) );
 			return createTransformedView( this.overview, affineTransform3D );
 		}
 		return null;
@@ -229,7 +258,7 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 		return transformedIntervalView;
 	}
 
-	private void saveOverviewAsBdv()
+	private void saveImagesAsBdvHdf5()
 	{
 
 		Utils.log( "Exporting overview image..." );
@@ -278,171 +307,205 @@ public class TomogramMatching < T extends RealType< T > & NativeType< T > >
 	}
 
 
-	private void matchTomogram( File tomogramFile )
+	private void matchTemplate( File templateFile )
 	{
-		Utils.log( "Matching " + tomogramFile.getName() +" ..." );
+		Utils.log( "Matching " + templateFile.getName() +" ..." );
 
-		final RandomAccessibleInterval< T > tomogram = openTomogram( tomogramFile );
+		final RandomAccessibleInterval< T > template = openTemplate( templateFile );
 
-		final RandomAccessibleInterval< T > subsampledTomogram =
-				Views.subsample( tomogram, getTomogramSubSampling() );
+		final RandomAccessibleInterval< T > subSampledTemplate =
+				Views.subsample( template, getTemplateSubSampling() );
 
-		RandomAccessibleInterval< T > projectedTomogram
-				= createProjectedTomogram( subsampledTomogram );
+		RandomAccessibleInterval< T > projectedTemplate
+				= createProjectedTemplate( subSampledTemplate );
 
-		RandomAccessibleInterval< T > downscaledTomogram
-				= createDownscaledTomogram( projectedTomogram );
+		RandomAccessibleInterval< T > downscaledTemplate
+				= createDownscaledTemplate( projectedTemplate );
 
-		matchToOverview( downscaledTomogram );
+		final int[] bestMatch = matchToOverview( downscaledTemplate );
+
+		matchingPositions.add( bestMatch );
 	}
 
-	private long[] getTomogramSubSampling()
+	private long[] getTemplateSubSampling()
 	{
-		return new long[]{
-				settings.matchingPixelSpacingNanometer,
-				settings.matchingPixelSpacingNanometer,
-				1 };
+		return new long[]{ subSampling, subSampling, 1 };
 	}
 
-	private void matchToOverview( RandomAccessibleInterval< T > tomogram )
+	private int[] matchToOverview( RandomAccessibleInterval< T > template )
 	{
-		Utils.log( "Finding best matchToOverview in overview image..." );
+		Utils.log( "Finding best match in overview image..." );
 
-		final int[] bestMatch = computePositionWithinOverviewImage( tomogram );
+		final int[] bestMatch = computePositionWithinOverviewImage( template );
 
-		showBestMatchOnOverview( tomogram, bestMatch );
+		showBestMatchOnOverview( template, bestMatch );
+
+		return bestMatch;
 	}
 
 	private void showBestMatchOnOverview(
-			RandomAccessibleInterval< T > tomogram,
+			RandomAccessibleInterval< T > template,
 			int[] bestMatch )
 	{
-		matchings.add( getRoi( tomogram, bestMatch ) );
-		overviewForMatchingImagePlus.setOverlay( matchings );
+		if ( settings.showIntermediateResults )
+		{
+			matchingOverlay.add( getRectangleRoi( template, bestMatch ) );
+			matchingOverlay.add( getTextRoi( bestMatch ) );
+			overviewForMatchingImagePlus.setOverlay( matchingOverlay );
+		}
 	}
 
-	private Roi getRoi( RandomAccessibleInterval< T > tomogram, int[] bestMatch )
+	private Roi getRectangleRoi(
+			RandomAccessibleInterval< T > template,
+			int[] bestMatch )
 	{
 		Roi r = new Roi( bestMatch[0], bestMatch[1],
-				tomogram.dimension( 0 ), tomogram.dimension( 1 )) ;
+				template.dimension( 0 ), template.dimension( 1 )) ;
 		r.setStrokeColor( Color.green);
 		return r;
 	}
 
-	private RandomAccessibleInterval< T >
-	createProjectedTomogram( RandomAccessibleInterval< T > tomogram )
+	private Roi getTextRoi( int[] bestMatch )
 	{
-		Utils.log( "Computing average projection..." );
+		Roi r = new TextRoi(
+				bestMatch[0] + 5, bestMatch[1] + 5,
+				"" + templateIndex ) ;
+		r.setStrokeColor( Color.magenta);
+		return r;
+	}
 
-			if ( tomogram.numDimensions() == 3 )
-		{
-			final Projection projection = new Projection( tomogram, Z_DIMENSION );
-			projectedTomogram = projection.average();
-		}
+	private RandomAccessibleInterval< T >
+	createProjectedTemplate( RandomAccessibleInterval< T > template )
+	{
+		Utils.log( "Computing template average projection..." );
+
+		if ( template.numDimensions() == 3 )
+			return new Projection( template, Z_DIMENSION ).average();
 		else
-		{
-			projectedTomogram = tomogram;
-		}
-
-		showIntermediateResult( projectedTomogram,"projected" );
-
-		return projectedTomogram;
-
+			return template;
 	}
 
 	/**
-	 * Downscales the tomogram to matchToOverview resolution of overview image.
-	 * Note that both overview and tomogram may been subsampled already.
+	 * Downscales the template to matchToOverview resolution of overview image.
+	 * Note that both overview and template may been subsampled already.
 	 * However, as both have been subsampled with the same factor,
 	 * the relative downscaling factor here still is correct.
-	 *  @param tomogramFile
 	 * @param projected
 	 */
 	private RandomAccessibleInterval< T >
-	createDownscaledTomogram( RandomAccessibleInterval< T > projected )
+	createDownscaledTemplate( RandomAccessibleInterval< T > projected )
 	{
 		Utils.log( "Scaling to overview image resolution..." );
+
 		final double[] scaling = getScaling( projected.numDimensions() );
-		downscaledTomogram = Scalings.createRescaledArrayImg( projected, scaling );
-		showIntermediateResult( downscaledTomogram, "scaled-projection" );
-		return downscaledTomogram;
+
+		RandomAccessibleInterval< T > downscaledTemplate
+				= Scalings.createRescaledArrayImg( projected, scaling );
+
+		showIntermediateResult( downscaledTemplate,
+				"" + templateIndex + " template" );
+
+		return downscaledTemplate;
 	}
 
-	private RandomAccessibleInterval< T > openTomogram( File tomogramFile )
+	private RandomAccessibleInterval< T > openTemplate( File templateFile )
 	{
-		settings.tomogramCalibrationNanometer
-				= ImageIO.getNanometerPixelWidth( tomogramFile );
 
-		if ( settings.confirmScalingViaUI && isFirstTomogram )
+		final CalibratedRAI< T > calibratedRAI = ImageIO.withBFopenRAI( templateFile );
+
+		templateCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
+
+		if ( settings.confirmScalingViaUI && templateIndex == 0 )
 		{
-			settings.tomogramCalibrationNanometer =
+			templateCalibrationNanometer =
 					confirmImageScalingUI(
-						settings.tomogramCalibrationNanometer,
-						"Tomogram");
-			isFirstTomogram = false;
+							templateCalibrationNanometer,
+						"Template");
 		}
 
-		return ImageIO.openImageAs8Bit( tomogramFile );
+		return calibratedRAI.rai;
 	}
 
 	private int[] computePositionWithinOverviewImage(
-			RandomAccessibleInterval< T > tomogram )
+			RandomAccessibleInterval< T > template )
 	{
-		final ByteProcessor tomogramProcessor = Utils.asByteProcessor( tomogram );
+		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
 
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewProcessor,
-				tomogramProcessor,
-				NORMALIZED_CORRELATION,
-				false );
-
-		final ImagePlus correlationImp = new ImagePlus( "correlation", correlation );
+				templateProcessor,
+				NORMALIZED_CORRELATION );
 
 		if ( settings.showIntermediateResults )
-			correlationImp.show();
+			new ImagePlus( ""+ templateIndex +" correlation",
+					correlation ).show();
 
-		// TODO: why is this only necessary here and not when running within Fiji?
-//		Utils.log( "Removing spurious maxima from correlation by minimum filter of radius 2..." );
-//		IJ.run( correlationImp, "Minimum...", "radius=2" );
-
-		final int[] position = TemplateMatchingPlugin.findMax(
-				correlationImp.getProcessor(), 0 );
+		final int[] position = findMaximumPosition( correlation );
 
 		return position;
 	}
 
-	private void saveTomogramAsBdv( RandomAccessibleInterval< T > tomogram, double[] offset, File tomogramFile )
+	private int[] findMaximumPosition( FloatProcessor processor )
+	{
+		final int[] maxPos = findMax( processor );
+		return maxPos;
+	}
+
+
+	public static int[] findMax( ImageProcessor ip ) {
+		int[] coord = new int[2];
+		float max = ip.getPixel(0, 0);
+		final int sWh = ip.getHeight();
+		final int sWw = ip.getWidth();
+
+		for (int j = 0; j < sWh; j++) {
+			for (int i = 0; i < sWw; i++) {
+				if (ip.getPixel(i, j) > max) {
+					max = ip.getPixel(i, j);
+					coord[0] = i;
+					coord[1] = j;
+				}
+			}
+		}
+
+		return (coord);
+	}
+
+	private void saveTemplateAsBdv(
+			RandomAccessibleInterval< T > template,
+			double[] offset,
+			File templateFile )
 	{
 
-		Utils.log( "Saving matched " + tomogramFile.getName() + " ..." );
+		Utils.log( "Saving matched " + templateFile.getName() + " ..." );
 
-		final IntervalView< T > tomogramWithImpDimensionOrder = Views.permute(
-				Views.addDimension( tomogram, 0, 0 ),
+		final IntervalView< T > templateWithImpDimensionOrder = Views.permute(
+				Views.addDimension( template, 0, 0 ),
 				2, 3 );
 
-		final ImagePlus imagePlus = Utils.asImagePlus( tomogramWithImpDimensionOrder );
+		final ImagePlus imagePlus = Utils.asImagePlus( templateWithImpDimensionOrder );
 
-		imagePlus.setTitle( tomogramFile.getName().split( "\\." )[ 0 ] );
+		imagePlus.setTitle( templateFile.getName().split( "\\." )[ 0 ] );
 
 		BdvExport.export(
 				imagePlus,
-				settings.outputDirectory + File.separator + tomogramFile.getName(),
-				getTomogramCalibration(),
+				settings.outputDirectory + File.separator + templateFile.getName(),
+				getTemplateCalibration(),
 				"nanometer",
 				offset );
 
 	}
 
-	private double[] getTomogramCalibration()
+	private double[] getTemplateCalibration()
 	{
 		double[] calibration = new double[ 3 ];
-		Arrays.fill( calibration, settings.tomogramCalibrationNanometer );
+		Arrays.fill( calibration, templateCalibrationNanometer );
 		return calibration;
 	}
 
 	private double[] getScaling( int numDimensions )
 	{
-		final double scalingRatio = settings.tomogramCalibrationNanometer
+		final double scalingRatio = templateCalibrationNanometer
 				/ settings.overviewCalibrationNanometer;
 		final double[] scaling = new double[ numDimensions ];
 		Arrays.fill( scaling, scalingRatio );

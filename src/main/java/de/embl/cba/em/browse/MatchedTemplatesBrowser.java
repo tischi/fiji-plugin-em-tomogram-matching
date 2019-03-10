@@ -18,11 +18,11 @@ import net.imglib2.view.Views;
 import java.io.File;
 import java.util.ArrayList;
 
-public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
+public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > >
 {
 	public static final ARGBType OVERVIEW_EM_COLOR =
 			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
-	private final MatchedTomogramReviewSettings settings;
+	private final MatchedTemplatesBrowsingSettings settings;
 	private ArrayList< File > inputFiles;
 	private Bdv bdv;
 	private ArrayList< ImageSource > imageSources;
@@ -30,7 +30,7 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
 
 
-	public MatchedTomogramReview( MatchedTomogramReviewSettings settings )
+	public MatchedTemplatesBrowser( MatchedTemplatesBrowsingSettings settings )
 	{
 		this.settings = settings;
 		this.imageSources = new ArrayList<>( );
@@ -45,7 +45,7 @@ public class MatchedTomogramReview < T extends RealType< T > & NativeType< T > >
 
 	private void showUI()
 	{
-		final MatchedTomogramReviewUI ui = new MatchedTomogramReviewUI( bdv );
+		final MatchedTemplatesBrowserUI ui = new MatchedTemplatesBrowserUI( bdv );
 		ui.showUI();
 	}
 

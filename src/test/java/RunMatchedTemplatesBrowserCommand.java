@@ -1,7 +1,7 @@
-import de.embl.cba.em.ui.TomogramMatchingCommand;
+import de.embl.cba.em.ui.MatchedTemplateBrowserCommand;
 import net.imagej.ImageJ;
 
-public class RunTomogramMatchingCommand
+public class RunMatchedTemplatesBrowserCommand
 {
 
 	public static void main(final String... args) throws Exception
@@ -10,7 +10,7 @@ public class RunTomogramMatchingCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( TomogramMatchingCommand.class, true );
+		ij.command().run( MatchedTemplateBrowserCommand.class, true );
 	}
 
 }

@@ -229,14 +229,15 @@ public class TemplateMatchingPlugin implements PlugIn {
 		return true;
 	}
 
-	public static FloatProcessor doMatch(ImagePlus src, ImagePlus tpl, int method, boolean showR) {
+	public static FloatProcessor doMatch(
+			ImagePlus src, ImagePlus tpl, int method ) {
 
-		return doMatch(src.getProcessor(), tpl.getProcessor(), method, showR);
+		return doMatch(src.getProcessor(), tpl.getProcessor(), method );
 
 	}
 
 	public static FloatProcessor doMatch(
-			ImageProcessor src, ImageProcessor tpl, int method, boolean showR) {
+			ImageProcessor src, ImageProcessor tpl, int method ) {
 
 		BufferedImage bi = null, bi2 = null;
 		FloatProcessor resultFp = null;
