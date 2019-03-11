@@ -1,10 +1,10 @@
 package de.embl.cba.templatematching.match;
 
 import de.embl.cba.templatematching.CalibratedRAI;
+import de.embl.cba.templatematching.FileUtils;
 import de.embl.cba.templatematching.ImageIO;
 import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.bdv.BdvImagePlusExport;
-import de.embl.cba.templatematching.bdv.BdvRaiVolumeExport;
+import de.embl.cba.bdv.utils.io.BdvRaiVolumeExport;
 import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
@@ -46,7 +46,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private final TemplateMatchingSettings settings;
 	private ArrayList< File > templateFiles;
-	private ImageProcessor overviewProcessor;
 	private RandomAccessibleInterval< T > overview;
 	private RandomAccessibleInterval< T > overviewForMatching;
 	private Overlay matchingOverlay;
@@ -101,22 +100,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private void createTemplateFileList()
 	{
-		File[] files = settings.templatesInputDirectory.listFiles();
-
-		templateFiles = new ArrayList<>();
-
-		for ( File file : files )
-		{
-			if ( isValid( file ) )
-			{
-				templateFiles.add( file );
-			}
-		}
-	}
-
-	private boolean isValid( File file )
-	{
-		return true;
+		templateFiles = FileUtils.getFileList( settings.templatesInputDirectory, settings.templatesRegExp );
 	}
 
 	private void matchTemplates()
@@ -141,12 +125,12 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatching = rotateOverview( overviewForMatching );
 
-		overviewProcessor = asFloatProcessor( overviewForMatching );
+		FloatProcessor overviewProcessor = asFloatProcessor( overviewForMatching );
 
 		overviewForMatchingImagePlus = new ImagePlus(
 				"Overview for matching", overviewProcessor );
 
-		//addNoiseToOverview( rotatedOverview );
+		addNoiseToOverview( overviewForMatchingImagePlus );
 
 		if ( settings.showIntermediateResults )
 			overviewForMatchingImagePlus.show();
@@ -160,13 +144,12 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				subSampling };
 	}
 
-	private void addNoiseToOverview( ImagePlus rotatedOverview )
+	private void addNoiseToOverview( ImagePlus overview )
 	{
 		Utils.log( "Adding noise to overview to avoid strange " +
 				"edge effects during correlation.." );
-		final ImagePlus duplicate = rotatedOverview.duplicate();
+		final ImagePlus duplicate = overview.duplicate();
 		IJ.run( duplicate, "Add Specified Noise...", "standard=10");
-//		overviewProcessorWithNoise = duplicate.getProcessor();
 	}
 
 	private void loadOverview()
@@ -271,8 +254,13 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 			String path = getOutputPath( template.file.getName() );
 
+			Utils.log( "Exporting " + template.file.getName() );
 			new BdvRaiVolumeExport().export(
-					rai, path, template.calibration, template.calibrationUnit, template.position );
+					rai,
+					path,
+					template.calibration,
+					template.calibrationUnit,
+					template.calibratedPositionInOverview );
 		}
 	}
 
@@ -342,8 +330,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private void matchTemplate( File templateFile )
 	{
-		Utils.log( "Matching " + templateFile.getName() +" ..." );
-
 		final RandomAccessibleInterval< T > template = openTemplate( templateFile );
 
 		final RandomAccessibleInterval< T > subSampledTemplate =
@@ -376,7 +362,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			matchedTemplate.rai = template;
 
 		matchedTemplate.file = templateFile;
-		matchedTemplate.position = position;
+		matchedTemplate.calibratedPositionInOverview = position;
 		matchedTemplate.calibration = templateCalibrationNanometer;
 		matchedTemplate.calibrationUnit = "nanometer";
 
@@ -385,9 +371,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private double[] getCalibratedPositionInOverview( int[] bestMatch )
 	{
-		final double[] position = new double[ bestMatch.length ];
+		final double[] position = new double[ 3 ];
 
-		for ( int d = 0; d < position.length; d++ )
+		for ( int d = 0; d < bestMatch.length; d++ )
 		{
 			position[ d ] = bestMatch[ d ] * scaling[ d ] * subSampling;
 		}
@@ -398,7 +384,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		RandomAccessibleInterval< T > rai;
 		File file;
-		double[] position;
+		double[] calibratedPositionInOverview;
 		double[] calibration;
 		String calibrationUnit;
 	}
@@ -508,7 +494,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
 
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
-				overviewProcessor,
+				overviewForMatchingImagePlus.getProcessor(),
 				templateProcessor,
 				NORMALIZED_CORRELATION );
 
@@ -547,42 +533,16 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return (coord);
 	}
 
-	private void saveTemplateAsBdv(
-			RandomAccessibleInterval< T > template,
-			double[] offset,
-			File templateFile )
-	{
-
-		Utils.log( "Saving matched " + templateFile.getName() + " ..." );
-
-		final IntervalView< T > templateWithImpDimensionOrder = Views.permute(
-				Views.addDimension( template, 0, 0 ),
-				2, 3 );
-
-		final ImagePlus imagePlus = Utils.asImagePlus( templateWithImpDimensionOrder );
-
-		imagePlus.setTitle( templateFile.getName().split( "\\." )[ 0 ] );
-
-		BdvImagePlusExport.export(
-				imagePlus,
-				settings.outputDirectory + File.separator + templateFile.getName(),
-				getTemplateCalibration(),
-				"nanometer",
-				offset );
-
-	}
-
-	private double[] getTemplateCalibration()
-	{
-		return templateCalibrationNanometer;
-	}
-
 	private double[] getScaling( int numDimensions )
 	{
 		final double scalingRatio =
 				templateCalibrationNanometer[ 0 ] / settings.overviewCalibrationNanometer;
 		final double[] scaling = new double[ numDimensions ];
 		Arrays.fill( scaling, scalingRatio );
+
+		Utils.log( "Template pixel size [nm]: " + templateCalibrationNanometer[ 0 ] );
+		Utils.log( "Overview pixel size [nm]: " + settings.overviewCalibrationNanometer );
+
 		Utils.log( "Scaling factor: " +  scalingRatio );
 		return scaling;
 	}

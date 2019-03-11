@@ -46,6 +46,9 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 	@Parameter ( label = "Templates Directory", style = "directory" )
 	public File tomogramInputDirectory = settings.templatesInputDirectory;
 
+	@Parameter ( label = "Templates Regular Expression" )
+	public String templatesRegExp = settings.templatesRegExp;
+
 	@Parameter ( label = "Angle between Overview and Templates" )
 	public double tomogramAngleDegrees = settings.overviewAngleDegrees;
 
@@ -84,6 +87,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.confirmScalingViaUI = false;
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 		settings.allTemplatesFitInRAM = allTemplatesFitInRAM;
+		settings.templatesRegExp = templatesRegExp;
 	}
 
 

@@ -13,4 +13,5 @@ public class TemplateMatchingSettings
 	public boolean confirmScalingViaUI;
 	public double matchingPixelSpacingNanometer;
 	public boolean allTemplatesFitInRAM;
+	public String templatesRegExp = ".*_hm.rec";
 }
