@@ -121,13 +121,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		loadOverview();
 
-		overview = rotate2D( overview ); // for saving
+		overview = rotate2D( overview );
 
 		final long[] overviewSubSampling = getOverviewSubSampling();
 
 		overviewForMatching = Views.subsample( overview, overviewSubSampling );
-
-		overviewForMatching = rotate2D( overviewForMatching );
 
 		FloatProcessor overviewProcessor = asFloatProcessor( overviewForMatching );
 
@@ -147,6 +145,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatchingImagePlus.getCalibration().pixelWidth = overviewCalibrationNanometer * overviewSubSampling[ 0 ];
 		overviewForMatchingImagePlus.getCalibration().pixelHeight = overviewCalibrationNanometer * overviewSubSampling[ 1 ];
+		overviewForMatchingImagePlus.getCalibration().setUnit( "nanometer" );
 	}
 
 	private long[] getOverviewSubSampling()
@@ -313,8 +312,18 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		String path = getOutputPath( "overview" );
 
+//		Utils.log( "Copy rotated overview image to RAM for faster saving..." );
+//		final RandomAccessibleInterval< T > copy = Utils.copyAsArrayImg( overview );
+
+		Utils.log( "Saving overview image in bdv.h5 format..." );
+
 		new BdvRaiVolumeExport().export(
-				overview, "overview", path, calibration, "nanometer", offset );
+				Views.zeroMin( overview ),
+				"overview",
+				path,
+				calibration,
+				"nanometer",
+				offset );
 	}
 
 	private RandomAccessibleInterval< T > getOverviewAs3d()
@@ -385,7 +394,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		for ( int d = 0; d < pixelPositionInSubSampledOverview.length; d++ )
 		{
-			calibratedPosition[ d ] = pixelPositionInSubSampledOverview[ d ] * subSampling * overviewCalibrationNanometer;
+			calibratedPosition[ d ] = pixelPositionInSubSampledOverview[ d ]
+					* subSampling * overviewCalibrationNanometer;
 		}
 
 		return calibratedPosition;
