@@ -146,10 +146,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private void addNoiseToOverview( ImagePlus overview )
 	{
-		Utils.log( "Adding noise to overview to avoid strange " +
-				"edge effects during correlation.." );
-		final ImagePlus duplicate = overview.duplicate();
-		IJ.run( duplicate, "Add Specified Noise...", "standard=10");
+		Utils.log( "Adding noise to overview..." );
+		//IJ.run( overview, "Add Specified Noise...", "standard=10");
+		IJ.run( overview, "Add Noise", "");
 	}
 
 	private void loadOverview()
