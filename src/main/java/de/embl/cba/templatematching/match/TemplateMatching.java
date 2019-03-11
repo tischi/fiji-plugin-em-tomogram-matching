@@ -15,7 +15,7 @@ import ij.process.ImageProcessor;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
-import net.imglib2.interpolation.randomaccess.ClampingNLinearInterpolatorFactory;
+import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.realtransform.InvertibleRealTransform;
@@ -38,7 +38,6 @@ import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfte
 public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 {
 
-	public static final int Z_DIMENSION = 2;
 	public static final int CV_TM_SQDIFF = 0;
 	public static final int CORRELATION = 4;
 	public static final int NORMALIZED_CORRELATION = 5;
@@ -65,14 +64,14 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	public void run()
 	{
-		openAndProcessOverview();
+		openOverview();
 
 		matchTemplates();
 
-		processResults();
+		saveResults();
 	}
 
-	public void processResults()
+	public void saveResults()
 	{
 		if ( settings.showIntermediateResults )
 			if ( ! confirmSaving() ) return;
@@ -100,7 +99,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private void createTemplateFileList()
 	{
-		templateFiles = FileUtils.getFileList( settings.templatesInputDirectory, settings.templatesRegExp );
+		templateFiles = FileUtils.getFileList(
+				settings.templatesInputDirectory, settings.templatesRegExp );
 	}
 
 	private void matchTemplates()
@@ -117,7 +117,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	private void openAndProcessOverview()
+	private void openOverview()
 	{
 		loadOverview();
 
@@ -127,9 +127,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatching = Views.subsample( overview, overviewSubSampling );
 
-		FloatProcessor overviewProcessor = asFloatProcessor( overviewForMatching );
-
-		createOverviewForMatchingImagePlus( overviewProcessor, overviewSubSampling );
+		createOverviewForMatchingImagePlus(
+				asFloatProcessor( overviewForMatching ),
+				overviewSubSampling );
 
 		addNoiseToOverview( overviewForMatchingImagePlus );
 
@@ -138,13 +138,17 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	}
 
-	private void createOverviewForMatchingImagePlus( FloatProcessor overviewProcessor, long[] overviewSubSampling )
+	private void createOverviewForMatchingImagePlus(
+			FloatProcessor overviewProcessor,
+			long[] overviewSubSampling )
 	{
 		overviewForMatchingImagePlus = new ImagePlus(
 				"Overview for matching", overviewProcessor );
 
-		overviewForMatchingImagePlus.getCalibration().pixelWidth = overviewCalibrationNanometer * overviewSubSampling[ 0 ];
-		overviewForMatchingImagePlus.getCalibration().pixelHeight = overviewCalibrationNanometer * overviewSubSampling[ 1 ];
+		overviewForMatchingImagePlus.getCalibration().pixelWidth =
+				overviewCalibrationNanometer * overviewSubSampling[ 0 ];
+		overviewForMatchingImagePlus.getCalibration().pixelHeight =
+				overviewCalibrationNanometer * overviewSubSampling[ 1 ];
 		overviewForMatchingImagePlus.getCalibration().setUnit( "nanometer" );
 	}
 
@@ -164,6 +168,14 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
+	/**
+	 * Sometimes there are areas of uniform pixel intensities in the images.
+	 * This causes issues with the x-correlation normalisation.
+	 * Adding some noise seems to solve this issue, while
+	 * not harming the x-correlation.
+	 *
+	 * @param overview
+	 */
 	private void addNoiseToOverview( ImagePlus overview )
 	{
 		Utils.log( "Adding noise to overview..." );
@@ -199,7 +211,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				Math.ceil( settings.matchingPixelSpacingNanometer
 						/ overviewCalibrationNanometer );
 
-		Utils.log( "Subsampling: " + subSampling );
+		Utils.log( "SubSampling: " + subSampling );
 	}
 
 	private double confirmImageScalingUI( double value, final String imageName )
@@ -240,11 +252,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		RealRandomAccessible rra =
 				Views.interpolate( Views.extendZero( rai ),
-						new ClampingNLinearInterpolatorFactory() );
+						new NearestNeighborInterpolatorFactory<>() );
 
 		rra = RealViews.transform( rra, transform );
 
-		final RandomAccessibleOnRealRandomAccessible raster = Views.raster( rra );
+		final RandomAccessibleOnRealRandomAccessible< T > raster = Views.raster( rra );
 
 		final FinalInterval transformedInterval =
 				createBoundingIntervalAfterTransformation( rai, transform );
@@ -325,27 +337,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				"nanometer",
 				offset );
 	}
-
-	private RandomAccessibleInterval< T > getOverviewAs3d()
-	{
-		RandomAccessibleInterval< T > overview3d;
-
-		if ( overview.numDimensions() == 2 )
-		{
-			overview3d = Views.addDimension(
-					overview, 0, 0 );
-			overview3d = Views.addDimension(
-					overview3d, 1, 3 );
-		}
-		else
-		{
-			overview3d = Views.addDimension(
-					overview, 1, 3 );
-		}
-
-		return overview3d;
-	}
-
 
 	private void matchTemplate( File templateFile )
 	{
@@ -463,7 +454,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Computing template average projection..." );
 
 		if ( template.numDimensions() == 3 )
-			return new Projection( template, Z_DIMENSION ).average();
+			return new Projection( template, 2 ).average();
 		else
 			return template;
 	}
