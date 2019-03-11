@@ -23,7 +23,6 @@ import net.imglib2.realtransform.RealViews;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.IntervalView;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
 
@@ -55,6 +54,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private double[] templateCalibrationNanometer;
 	private ArrayList< MatchedTemplate > matchedTemplates;
 	private double[] scaling;
+	private double overviewCalibrationNanometer;
 
 	public TemplateMatching( TemplateMatchingSettings settings )
 	{
@@ -121,14 +121,17 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		loadOverview();
 
-		overviewForMatching = Views.subsample( overview, getOverviewSubSampling() );
+		overview = rotate2D( overview ); // for saving
 
-		overviewForMatching = rotateOverview( overviewForMatching );
+		final long[] overviewSubSampling = getOverviewSubSampling();
+
+		overviewForMatching = Views.subsample( overview, overviewSubSampling );
+
+		overviewForMatching = rotate2D( overviewForMatching );
 
 		FloatProcessor overviewProcessor = asFloatProcessor( overviewForMatching );
 
-		overviewForMatchingImagePlus = new ImagePlus(
-				"Overview for matching", overviewProcessor );
+		createOverviewForMatchingImagePlus( overviewProcessor, overviewSubSampling );
 
 		addNoiseToOverview( overviewForMatchingImagePlus );
 
@@ -137,11 +140,29 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	}
 
+	private void createOverviewForMatchingImagePlus( FloatProcessor overviewProcessor, long[] overviewSubSampling )
+	{
+		overviewForMatchingImagePlus = new ImagePlus(
+				"Overview for matching", overviewProcessor );
+
+		overviewForMatchingImagePlus.getCalibration().pixelWidth = overviewCalibrationNanometer * overviewSubSampling[ 0 ];
+		overviewForMatchingImagePlus.getCalibration().pixelHeight = overviewCalibrationNanometer * overviewSubSampling[ 1 ];
+	}
+
 	private long[] getOverviewSubSampling()
 	{
-		return new long[]{
-				subSampling,
-				subSampling };
+		if ( overview.numDimensions() == 2 )
+		{
+			return new long[]{ subSampling, subSampling };
+		}
+		else if ( overview.numDimensions() == 3)
+		{
+			return new long[]{ subSampling, subSampling, 1 };
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	private void addNoiseToOverview( ImagePlus overview )
@@ -158,13 +179,13 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		final CalibratedRAI< T > calibratedRAI =
 				ImageIO.withBFopenRAI( settings.overviewImageFile );
 
-		settings.overviewCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
+		overviewCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
 
 		if ( settings.confirmScalingViaUI )
 		{
-			settings.overviewCalibrationNanometer
+			overviewCalibrationNanometer
 					= confirmImageScalingUI(
-					settings.overviewCalibrationNanometer,
+					overviewCalibrationNanometer,
 					"Overview");
 		}
 
@@ -177,13 +198,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		subSampling = (int)
 				Math.ceil( settings.matchingPixelSpacingNanometer
-						/ settings.overviewCalibrationNanometer );
+						/ overviewCalibrationNanometer );
 
 		Utils.log( "Subsampling: " + subSampling );
-	}
-
-	private void setOverviewCalibration()
-	{
 	}
 
 	private double confirmImageScalingUI( double value, final String imageName )
@@ -199,21 +216,21 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	}
 
 	private RandomAccessibleInterval< T >
-	rotateOverview( RandomAccessibleInterval< T > overview )
+	rotate2D( RandomAccessibleInterval< T > rai )
 	{
-		if ( overview.numDimensions() == 2 )
+		if ( rai.numDimensions() == 2 )
 		{
 			final AffineTransform2D affineTransform2D = new AffineTransform2D();
 			affineTransform2D.rotate(
 					Math.toRadians( -settings.overviewAngleDegrees ) );
-			return createTransformedView(overview, affineTransform2D );
+			return createTransformedView( rai, affineTransform2D );
 		}
 		else if ( this.overview.numDimensions() == 3 )
 		{
 			final AffineTransform3D affineTransform3D = new AffineTransform3D();
 			affineTransform3D.rotate(
 					2, Math.toRadians( -settings.overviewAngleDegrees ) );
-			return createTransformedView( this.overview, affineTransform3D );
+			return createTransformedView( rai, affineTransform3D );
 		}
 		return null;
 	}
@@ -252,10 +269,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			RandomAccessibleInterval< T > rai = getRandomAccessibleInterval( template );
 
 			String path = getOutputPath( template.file.getName() );
-
 			Utils.log( "Exporting " + template.file.getName() );
+
 			new BdvRaiVolumeExport().export(
 					rai,
+					template.file.getName(),
 					path,
 					template.calibration,
 					template.calibrationUnit,
@@ -287,8 +305,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		Utils.log( "Exporting overview image..." );
 
 		double[] calibration = new double[ 3 ];
-		calibration[ 0 ] = settings.overviewCalibrationNanometer;
-		calibration[ 1 ] = settings.overviewCalibrationNanometer;
+		calibration[ 0 ] = overviewCalibrationNanometer;
+		calibration[ 1 ] = overviewCalibrationNanometer;
 		calibration[ 2 ] = 2000;
 
 		double[] offset = new double[ 3 ];
@@ -296,14 +314,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		String path = getOutputPath( "overview" );
 
 		new BdvRaiVolumeExport().export(
-				overview, path, calibration, "nanometer", offset );
-	}
-
-	private ImagePlus getOverviewAs3dImagePlus()
-	{
-		RandomAccessibleInterval< T > overview3d = getOverviewAs3d();
-
-		return Utils.asImagePlus( overview3d );
+				overview, "overview", path, calibration, "nanometer", offset );
 	}
 
 	private RandomAccessibleInterval< T > getOverviewAs3d()
@@ -340,10 +351,10 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		RandomAccessibleInterval< T > downscaledTemplate
 				= createDownscaledTemplate( projectedTemplate );
 
-		final int[] bestMatch = matchToOverview( downscaledTemplate );
+		final int[] positionInSubsampledOverview = matchToOverview( downscaledTemplate );
 
 		final MatchedTemplate matchedTemplate =
-				getMatchedTemplate( templateFile, template, bestMatch );
+				getMatchedTemplate( templateFile, template, positionInSubsampledOverview );
 
 		matchedTemplates.add( matchedTemplate );
 	}
@@ -351,9 +362,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private MatchedTemplate getMatchedTemplate(
 			File templateFile,
 			RandomAccessibleInterval< T > template,
-			int[] bestMatch )
+			int[] positionInSubSampledOverview )
 	{
-		final double[] position = getCalibratedPositionInOverview( bestMatch );
+		final double[] position = getCalibratedPosition( positionInSubSampledOverview );
 
 		final MatchedTemplate matchedTemplate = new MatchedTemplate();
 
@@ -368,15 +379,16 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return matchedTemplate;
 	}
 
-	private double[] getCalibratedPositionInOverview( int[] bestMatch )
+	private double[] getCalibratedPosition( int[] pixelPositionInSubSampledOverview )
 	{
-		final double[] position = new double[ 3 ];
+		final double[] calibratedPosition = new double[ 3 ];
 
-		for ( int d = 0; d < bestMatch.length; d++ )
+		for ( int d = 0; d < pixelPositionInSubSampledOverview.length; d++ )
 		{
-			position[ d ] = bestMatch[ d ] * scaling[ d ] * subSampling;
+			calibratedPosition[ d ] = pixelPositionInSubSampledOverview[ d ] * subSampling * overviewCalibrationNanometer;
 		}
-		return position;
+
+		return calibratedPosition;
 	}
 
 	class MatchedTemplate
@@ -471,7 +483,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private RandomAccessibleInterval< T > openTemplate( File templateFile )
 	{
-
 		final CalibratedRAI< T > calibratedRAI = ImageIO.withBFopenRAI( templateFile );
 
 		templateCalibrationNanometer = calibratedRAI.nanometerCalibration;
@@ -535,12 +546,12 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private double[] getScaling( int numDimensions )
 	{
 		final double scalingRatio =
-				templateCalibrationNanometer[ 0 ] / settings.overviewCalibrationNanometer;
+				templateCalibrationNanometer[ 0 ] / overviewCalibrationNanometer;
 		final double[] scaling = new double[ numDimensions ];
 		Arrays.fill( scaling, scalingRatio );
 
 		Utils.log( "Template pixel size [nm]: " + templateCalibrationNanometer[ 0 ] );
-		Utils.log( "Overview pixel size [nm]: " + settings.overviewCalibrationNanometer );
+		Utils.log( "Overview pixel size [nm]: " + overviewCalibrationNanometer );
 
 		Utils.log( "Scaling factor: " +  scalingRatio );
 		return scaling;

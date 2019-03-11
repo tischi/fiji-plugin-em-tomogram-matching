@@ -2,7 +2,6 @@ package de.embl.cba.templatematching.ui;
 
 import de.embl.cba.templatematching.browse.MatchedTemplatesBrowser;
 import de.embl.cba.templatematching.browse.MatchedTemplatesBrowsingSettings;
-import ij.ImagePlus;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import org.scijava.command.Command;
@@ -21,14 +20,14 @@ public class MatchedTemplateBrowserCommand<T extends RealType<T> & NativeType< T
 
 	public void run()
 	{
-		setSettingsFromUI();
+		setSettings();
 
 		final MatchedTemplatesBrowser browser = new MatchedTemplatesBrowser( settings );
 
 		browser.run();
 	}
 
-	public void setSettingsFromUI()
+	public void setSettings()
 	{
 		settings.inputDirectory = inputDirectory;
 	}
