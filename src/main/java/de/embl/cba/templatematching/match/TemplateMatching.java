@@ -9,12 +9,18 @@ import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Prefs;
 import ij.gui.*;
+import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
+import net.imglib2.algorithm.localextrema.RefinedPeak;
+import net.imglib2.algorithm.localextrema.SubpixelLocalization;
+import net.imglib2.img.Img;
+import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
@@ -23,13 +29,17 @@ import net.imglib2.realtransform.RealViews;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.util.Util;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
+import net.imglib2.Point;
 
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 
 import static de.embl.cba.templatematching.Utils.asFloatProcessor;
 import static de.embl.cba.templatematching.Utils.showIntermediateResult;
@@ -145,11 +155,13 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		overviewForMatchingImagePlus = new ImagePlus(
 				"Overview for matching", overviewProcessor );
 
-		overviewForMatchingImagePlus.getCalibration().pixelWidth =
+		final Calibration calibration = overviewForMatchingImagePlus.getCalibration();
+
+		calibration.pixelWidth =
 				overviewCalibrationNanometer * overviewSubSampling[ 0 ];
-		overviewForMatchingImagePlus.getCalibration().pixelHeight =
+		calibration.pixelHeight =
 				overviewCalibrationNanometer * overviewSubSampling[ 1 ];
-		overviewForMatchingImagePlus.getCalibration().setUnit( "nanometer" );
+		calibration.setUnit( "nanometer" );
 	}
 
 	private long[] getOverviewSubSampling()
@@ -351,10 +363,10 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		RandomAccessibleInterval< T > downscaledTemplate
 				= createDownscaledTemplate( projectedTemplate );
 
-		final int[] positionInSubsampledOverview = matchToOverview( downscaledTemplate );
+		final int[] positionInSubSampledOverview = matchToOverview( downscaledTemplate );
 
 		final MatchedTemplate matchedTemplate =
-				getMatchedTemplate( templateFile, template, positionInSubsampledOverview );
+				getMatchedTemplate( templateFile, template, positionInSubSampledOverview );
 
 		matchedTemplates.add( matchedTemplate );
 	}
@@ -514,6 +526,31 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 					correlation ).show();
 
 		final int[] position = findMaximumPosition( correlation );
+
+		final RandomAccessibleInterval< T > correlationRai
+				= ImageJFunctions.wrapReal( new ImagePlus( "", correlation ) );
+
+		final SubpixelLocalization< Point, T > spl =
+				new SubpixelLocalization< >( correlationRai.numDimensions() );
+		spl.setNumThreads( 1 );
+		spl.setReturnInvalidPeaks( true );
+		spl.setCanMoveOutside( true );
+		spl.setAllowMaximaTolerance( true );
+		spl.setMaxNumMoves( 10 );
+
+		ArrayList peaks = new ArrayList< Point >(  );
+		peaks.add( new Point( position ) );
+
+		final ArrayList< RefinedPeak< Point > > refined = spl.process(
+				peaks,
+				correlationRai,
+				correlationRai );
+
+		final RefinedPeak< Point > pointRefinedPeak = refined.get( 0 );
+
+		final double[] refinedPeak = new double[ correlationRai.numDimensions() ];
+
+		pointRefinedPeak.setPosition( refinedPeak );
 
 		return position;
 	}

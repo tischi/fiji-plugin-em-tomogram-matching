@@ -571,20 +571,18 @@ public class Utils
 
 	public static void updateBdv( Bdv bdv, long msecs )
 	{
-		(new Thread(new Runnable(){
-			public void run(){
-				try
-				{
-					Thread.sleep( msecs );
-				}
-				catch ( InterruptedException e )
-				{
-					e.printStackTrace();
-				}
-
-				bdv.getBdvHandle().getViewerPanel().requestRepaint();
+		(new Thread( () -> {
+			try
+			{
+				Thread.sleep( msecs );
 			}
-		})).start();
+			catch ( InterruptedException e )
+			{
+				e.printStackTrace();
+			}
+
+			bdv.getBdvHandle().getViewerPanel().requestRepaint();
+		} )).start();
 	}
 
 	public static < T extends RealType< T > & NativeType< T > >

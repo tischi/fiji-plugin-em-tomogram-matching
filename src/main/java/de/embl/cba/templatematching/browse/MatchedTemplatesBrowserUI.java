@@ -37,6 +37,7 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	public void showUI()
 	{
 		addSourceZoomPanel( this );
+		zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 		addDisplaySettingsUI( this );
 		addCaptureViewPanel( this );
 		createAndShowUI();
@@ -44,8 +45,10 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 	private void addDisplaySettingsUI( JPanel panel )
 	{
-		final List< ConverterSetup > converterSetups = bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
-		final List< SourceState< ? > > sources = bdv.getBdvHandle().getViewerPanel().getState().getSources();
+		final List< ConverterSetup > converterSetups =
+				bdv.getBdvHandle().getSetupAssignments().getConverterSetups();
+		final List< SourceState< ? > > sources =
+				bdv.getBdvHandle().getViewerPanel().getState().getSources();
 
 		ArrayList< Integer > tomogramSourceIndices = new ArrayList<>(  );
 
@@ -125,7 +128,8 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 		tomogramComboBox.addActionListener( e -> {
 			zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
-			Utils.updateBdv( bdv,1000 );
+			bdv.getBdvHandle().getViewerPanel().requestRepaint();
+			//Utils.updateBdv( bdv,1000 );
 		} );
 
 		panel.add( horizontalLayoutPanel );

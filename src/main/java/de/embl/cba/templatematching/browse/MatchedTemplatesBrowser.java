@@ -53,11 +53,11 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	{
 		for ( File file : inputFiles )
 		{
-			showWithBdv( file );
+			addToBdv( file );
 		}
 	}
 
-	private void showWithBdv( File file )
+	private void addToBdv( File file )
 	{
 		final SpimData spimData = openSpimData( file );
 
@@ -80,8 +80,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 
 		imageSources.add( new ImageSource( file, bdvStackSource, spimData ) );
 
-		Utils.updateBdv( bdv,1000 );
-
+		//Utils.updateBdv( bdv,1000 );
 	}
 
 	private void setNames( SpimData spimData, String name )
