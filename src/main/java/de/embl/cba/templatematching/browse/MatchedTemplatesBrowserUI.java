@@ -59,10 +59,10 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 			if ( name.contains( "overview" ) )
 			{
 				Color color;
-				if ( name.contains( "channel 1" ) ) color = Color.GRAY;
-				else if ( name.contains( "channel 2" ) ) color = Color.RED;
-				else if ( name.contains( "channel 3" ) ) color = Color.GREEN;
-				else if ( name.contains( "channel 4" ) ) color = Color.BLUE	;
+				if ( name.contains( "_ch0" ) ) color = Color.GRAY;
+				else if ( name.contains( "_ch1" ) ) color = Color.RED;
+				else if ( name.contains( "_ch2" ) ) color = Color.GREEN;
+				else if ( name.contains( "_ch3" ) ) color = Color.BLUE	;
 				else color = Color.GRAY;
 
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );

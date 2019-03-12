@@ -9,6 +9,8 @@ public class CalibratedRAI< T extends RealType< T > >
 {
 	public RandomAccessibleInterval< T > rai;
 	public double[] nanometerCalibration;
+	public boolean is3D = false;
+	public boolean isMultiChannel = false;
 
 	public CalibratedRAI( ImagePlus imp )
 	{
@@ -24,6 +26,9 @@ public class CalibratedRAI< T extends RealType< T > >
 				imp.getCalibration().pixelHeight, unit );
 		nanometerCalibration[ 2 ] = Utils.asNanometers(
 				imp.getCalibration().pixelDepth, unit );
+
+		if ( imp.getNChannels() > 1 ) isMultiChannel = true;
+		if ( imp.getNSlices() > 1 ) is3D = true;
 
 	}
 }

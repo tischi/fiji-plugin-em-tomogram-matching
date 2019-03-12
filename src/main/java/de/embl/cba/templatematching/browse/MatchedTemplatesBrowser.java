@@ -1,6 +1,7 @@
 package de.embl.cba.templatematching.browse;
 
 import bdv.spimdata.XmlIoSpimDataMinimal;
+import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import de.embl.cba.templatematching.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.templatematching.bdv.ImageSource;
@@ -17,6 +18,7 @@ import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > >
 {
@@ -105,7 +107,8 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 
 	private void setDisplayRange( BdvStackSource< ? > bdvStackSource )
 	{
-		final int numMipmapLevels = bdvStackSource.getSources().get( 0 ).getSpimSource().getNumMipmapLevels();
+		final int numMipmapLevels =
+				bdvStackSource.getSources().get( 0 ).getSpimSource().getNumMipmapLevels();
 
 		final RandomAccessibleInterval< T > lowResSource =
 				(RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, numMipmapLevels - 1  );

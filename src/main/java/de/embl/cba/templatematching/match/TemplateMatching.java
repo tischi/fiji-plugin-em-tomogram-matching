@@ -1,5 +1,6 @@
 package de.embl.cba.templatematching.match;
 
+import de.embl.cba.bdv.utils.io.BdvRaiXYZCTExport;
 import de.embl.cba.templatematching.CalibratedRAI;
 import de.embl.cba.templatematching.FileUtils;
 import de.embl.cba.templatematching.ImageIO;
@@ -58,6 +59,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private ArrayList< MatchedTemplate > matchedTemplates;
 	private double[] scaling;
 	private double overviewCalibrationNanometer;
+	private boolean overviewIs3D;
+	private boolean overviewIsMultiChannel;
 
 	public TemplateMatching( TemplateMatchingSettings settings )
 	{
@@ -66,21 +69,21 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
-	public void run()
+	public boolean run()
 	{
 		openOverview();
 
 		matchTemplates();
 
-		saveResults();
+		return saveResults();
 	}
 
-	public void saveResults()
+	public boolean saveResults()
 	{
 		if ( settings.showIntermediateResults )
-			if ( ! confirmSaving() ) return;
+			if ( ! confirmSaving() ) return false;
 
-		saveImagesAsBdvHdf5();
+		return saveImagesAsBdvHdf5();
 	}
 
 	public boolean confirmSaving()
@@ -198,7 +201,10 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		final CalibratedRAI< T > calibratedRAI =
 				ImageIO.withBFopenRAI( settings.overviewImageFile );
 
+		// TODO: wrap into "PhysicalRai"
 		overviewCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
+		overviewIs3D = calibratedRAI.is3D;
+		overviewIsMultiChannel = calibratedRAI.isMultiChannel;
 
 		if ( settings.confirmScalingViaUI )
 		{
@@ -275,10 +281,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return transformedIntervalView;
 	}
 
-	private void saveImagesAsBdvHdf5()
+	private boolean saveImagesAsBdvHdf5()
 	{
-		exportOverview();
 		exportTemplates();
+		exportOverview();
+		return true;
 	}
 
 	private void exportTemplates()
@@ -290,7 +297,16 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			String path = getOutputPath( template.file.getName() );
 			Utils.log( "Exporting " + template.file.getName() );
 
-			new BdvRaiVolumeExport().export(
+			if ( rai.numDimensions() == 2 ) // add z-dimension
+				rai = Views.addDimension( rai, 0, 0 );
+
+			// add channel dimension
+			rai = Views.addDimension( rai, 0, 0 );
+
+			// add time dimension
+			rai = Views.addDimension( rai, 0, 0 );
+
+			new BdvRaiXYZCTExport< T >().export(
 					rai,
 					template.file.getName(),
 					path,
@@ -337,7 +353,16 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		Utils.log( "Saving overview image in bdv.h5 format..." );
 
-		new BdvRaiVolumeExport().export(
+		if ( ! overviewIs3D ) // add z-dimension
+			overview = Views.addDimension( overview, 0, 0 );
+
+		if ( overviewIsMultiChannel ) // swap z and channel dimension
+			overview = Views.permute( overview, 2, 3 );
+
+		// add time dimension
+		overview = Views.addDimension( overview, 0, 0 );
+
+		new BdvRaiXYZCTExport< T >().export(
 				Views.zeroMin( overview ),
 				"overview",
 				path,

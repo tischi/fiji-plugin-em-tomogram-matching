@@ -1,5 +1,7 @@
 package de.embl.cba.templatematching.ui;
 
+import de.embl.cba.templatematching.browse.MatchedTemplatesBrowser;
+import de.embl.cba.templatematching.browse.MatchedTemplatesBrowsingSettings;
 import de.embl.cba.templatematching.match.TemplateMatching;
 import de.embl.cba.templatematching.match.TemplateMatchingSettings;
 import ij.IJ;
@@ -71,9 +73,18 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 
 		final TemplateMatching matching = new TemplateMatching( settings );
 
-		matching.run();
+		if ( matching.run() )
+		{
+			MatchedTemplatesBrowsingSettings browsingSettings
+					= new MatchedTemplatesBrowsingSettings();
+			browsingSettings.inputDirectory = settings.outputDirectory;
+			new MatchedTemplatesBrowser( browsingSettings );
+		}
+		else
+		{
+			IJ.showMessage( "Template matching finished!" );
+		}
 
-		IJ.showMessage( "Template matching finished!" );
 	}
 
 
