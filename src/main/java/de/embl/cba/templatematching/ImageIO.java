@@ -25,7 +25,7 @@ public class ImageIO
 	public static  < T extends RealType< T > & NativeType< T > >
 	RandomAccessibleInterval< T > openImageAs8Bit( File file )
 	{
-		Utils.log( "Opening " + file.getName() + "...");
+		Utils.log( "Loading " + file.getName() + "...");
 
 		ImagePlus imp = withBFopenImp( file );
 
@@ -172,7 +172,7 @@ public class ImageIO
 	public static  < T extends RealType< T > & NativeType< T > >
 	CalibratedRAI< T > withBFopenRAI( File file )
 	{
-		Utils.log( "Opening " + file.getName() + "...");
+		Utils.log( "Loading " + file.getName() + "...");
 
 		ImagePlus imp = withBFopenImp( file );
 

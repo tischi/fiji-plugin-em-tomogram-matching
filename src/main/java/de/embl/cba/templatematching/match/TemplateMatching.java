@@ -9,17 +9,14 @@ import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.Prefs;
 import ij.gui.*;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
-import net.imglib2.FinalInterval;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealRandomAccessible;
+import net.imglib2.*;
+import net.imglib2.Point;
 import net.imglib2.algorithm.localextrema.RefinedPeak;
 import net.imglib2.algorithm.localextrema.SubpixelLocalization;
-import net.imglib2.img.Img;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
@@ -29,11 +26,8 @@ import net.imglib2.realtransform.RealViews;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Util;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.Views;
-import net.imglib2.Point;
 
 import java.awt.*;
 import java.io.File;
@@ -133,6 +127,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overview = rotate2D( overview );
 
+		overview = Views.zeroMin( overview );
+
 		final long[] overviewSubSampling = getOverviewSubSampling();
 
 		overviewForMatching = Views.subsample( overview, overviewSubSampling );
@@ -197,7 +193,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private void loadOverview()
 	{
-		Utils.log( "Opening overview image..." );
+		Utils.log( "Loading overview image..." );
 
 		final CalibratedRAI< T > calibratedRAI =
 				ImageIO.withBFopenRAI( settings.overviewImageFile );
@@ -363,7 +359,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		RandomAccessibleInterval< T > downscaledTemplate
 				= createDownscaledTemplate( projectedTemplate );
 
-		final int[] positionInSubSampledOverview = matchToOverview( downscaledTemplate );
+		final double[] positionInSubSampledOverview = matchToOverview( downscaledTemplate );
 
 		final MatchedTemplate matchedTemplate =
 				getMatchedTemplate( templateFile, template, positionInSubSampledOverview );
@@ -374,7 +370,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private MatchedTemplate getMatchedTemplate(
 			File templateFile,
 			RandomAccessibleInterval< T > template,
-			int[] positionInSubSampledOverview )
+			double[] positionInSubSampledOverview )
 	{
 		final double[] position = getCalibratedPosition( positionInSubSampledOverview );
 
@@ -391,7 +387,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return matchedTemplate;
 	}
 
-	private double[] getCalibratedPosition( int[] pixelPositionInSubSampledOverview )
+	private double[] getCalibratedPosition( double[] pixelPositionInSubSampledOverview )
 	{
 		final double[] calibratedPosition = new double[ 3 ];
 
@@ -418,25 +414,30 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return new long[]{ subSampling, subSampling, 1 };
 	}
 
-	private int[] matchToOverview( RandomAccessibleInterval< T > template )
+	private double[] matchToOverview( RandomAccessibleInterval< T > template )
 	{
 		Utils.log( "Finding best match in overview image..." );
 
-		final int[] bestMatch = computePositionWithinOverviewImage( template );
+		final double[] position = computePositionWithinOverviewImage( template );
 
-		showBestMatchOnOverview( template, bestMatch );
+		showBestMatchOnOverview( template, position );
 
-		return bestMatch;
+		return position;
 	}
 
 	private void showBestMatchOnOverview(
 			RandomAccessibleInterval< T > template,
-			int[] bestMatch )
+			double[] position )
 	{
+
+		final int[] intPosition = new int[ position.length ];
+		for ( int d = 0; d < position.length; d++ )
+			intPosition[ d ] = (int) position[ d ];
+
 		if ( settings.showIntermediateResults )
 		{
-			matchingOverlay.add( getRectangleRoi( template, bestMatch ) );
-			matchingOverlay.add( getTextRoi( bestMatch ) );
+			matchingOverlay.add( getRectangleRoi( template, intPosition ) );
+			matchingOverlay.add( getTextRoi( intPosition ) );
 			overviewForMatchingImagePlus.setOverlay( matchingOverlay );
 		}
 	}
@@ -511,7 +512,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return calibratedRAI.rai;
 	}
 
-	private int[] computePositionWithinOverviewImage(
+	private double[] computePositionWithinOverviewImage(
 			RandomAccessibleInterval< T > template )
 	{
 		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
@@ -527,11 +528,20 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		final int[] position = findMaximumPosition( correlation );
 
+		final double[] refinedPosition = computeRefinedPosition( correlation, position );
+
+		return refinedPosition;
+	}
+
+	private double[] computeRefinedPosition( FloatProcessor correlation, int[] position )
+	{
 		final RandomAccessibleInterval< T > correlationRai
 				= ImageJFunctions.wrapReal( new ImagePlus( "", correlation ) );
 
+		final int numDimensions = correlationRai.numDimensions();
+
 		final SubpixelLocalization< Point, T > spl =
-				new SubpixelLocalization< >( correlationRai.numDimensions() );
+				new SubpixelLocalization< >( numDimensions );
 		spl.setNumThreads( 1 );
 		spl.setReturnInvalidPeaks( true );
 		spl.setCanMoveOutside( true );
@@ -539,20 +549,20 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		spl.setMaxNumMoves( 10 );
 
 		ArrayList peaks = new ArrayList< Point >(  );
-		peaks.add( new Point( position ) );
+		peaks.add( new Point( position[ 0 ], position[ 1 ] ) );
 
 		final ArrayList< RefinedPeak< Point > > refined = spl.process(
 				peaks,
 				correlationRai,
 				correlationRai );
 
-		final RefinedPeak< Point > pointRefinedPeak = refined.get( 0 );
+		final RefinedPeak< Point > refinedPeak = refined.get( 0 );
 
-		final double[] refinedPeak = new double[ correlationRai.numDimensions() ];
+		final double[] refinedPosition = new double[ numDimensions ];
+		for ( int d = 0; d < numDimensions; d++ )
+			refinedPosition[ d ] = refinedPeak.getDoublePosition( d );
 
-		pointRefinedPeak.setPosition( refinedPeak );
-
-		return position;
+		return refinedPosition;
 	}
 
 	private int[] findMaximumPosition( FloatProcessor processor )
