@@ -82,7 +82,12 @@ public class Utils
 
 	public static ARGBType asArgbType( Color color )
 	{
-		return new ARGBType( ARGBType.rgba( color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha() ) );
+		return new ARGBType(
+				ARGBType.rgba(
+						color.getRed(),
+						color.getGreen(),
+						color.getBlue(),
+						color.getAlpha() ) );
 	}
 
 	public static int[] getCellPos( String cellPosString )

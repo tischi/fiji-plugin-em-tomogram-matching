@@ -1,16 +1,15 @@
 package de.embl.cba.templatematching.browse;
 
 import bdv.spimdata.XmlIoSpimDataMinimal;
-import bdv.tools.brightness.ConverterSetup;
 import bdv.util.*;
 import de.embl.cba.templatematching.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.templatematching.bdv.ImageSource;
-import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.SpimData;
 import mpicbg.spim.data.SpimDataException;
 import mpicbg.spim.data.XmlIoSpimData;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
@@ -18,7 +17,6 @@ import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > >
 {
@@ -42,7 +40,19 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	{
 		fetchImageSources();
 		showImageSources();
+		centerZatZero();
 		showUI();
+	}
+
+	public void centerZatZero()
+	{
+		final AffineTransform3D viewerTransform = new AffineTransform3D();
+		bdv.getBdvHandle().getViewerPanel()
+				.getState().getViewerTransform( viewerTransform );
+		final double[] translation = viewerTransform.getTranslation();
+		translation[ 2 ] = 0;
+		viewerTransform.setTranslation( translation );
+		bdv.getBdvHandle().getViewerPanel().setCurrentViewerTransform( viewerTransform );
 	}
 
 	private void showUI()

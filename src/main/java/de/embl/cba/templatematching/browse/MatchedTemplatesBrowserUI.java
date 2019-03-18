@@ -6,20 +6,23 @@ import bdv.viewer.state.SourceState;
 import de.embl.cba.bdv.utils.*;
 import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.sequence.VoxelDimensions;
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import de.embl.cba.templatematching.UiUtils;
+import net.imglib2.view.SubsampleIntervalView;
+import net.imglib2.view.Views;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import static de.embl.cba.bdv.utils.BdvUserInterfaceUtils.addSourcesDisplaySettingsUI;
 import static de.embl.cba.bdv.utils.BdvUtils.zoomToSource;
 import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
+import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T > > extends JPanel
 {
@@ -27,7 +30,6 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	JComboBox tomogramComboBox;
 	private final Bdv bdv;
 	private VoxelDimensions tomogramVoxelDimensions;
-
 
 	public MatchedTemplatesBrowserUI( Bdv bdv )
 	{
@@ -50,40 +52,106 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		final List< SourceState< ? > > sources =
 				bdv.getBdvHandle().getViewerPanel().getState().getSources();
 
-		ArrayList< Integer > tomogramSourceIndices = new ArrayList<>(  );
+		// TODO: how to make this more generic?
+		ArrayList< Integer > lowMagTomogramSourceIndices = new ArrayList<>(  );
+		ArrayList< Integer > highMagTomogramSourceIndices = new ArrayList<>(  );
 
 		for ( int sourceIndex = 0; sourceIndex < sources.size(); ++sourceIndex )
 		{
 			final String name = sources.get( sourceIndex ).getSpimSource().getName();
+			final int numMipmapLevels = sources.get( sourceIndex ).getSpimSource().getNumMipmapLevels();
 
 			if ( name.contains( "overview" ) )
 			{
-				Color color;
-				if ( name.contains( "_ch0" ) ) color = Color.GRAY;
-				else if ( name.contains( "_ch1" ) ) color = Color.RED;
-				else if ( name.contains( "_ch2" ) ) color = Color.GREEN;
-				else if ( name.contains( "_ch3" ) ) color = Color.BLUE	;
-				else color = Color.GRAY;
-
+				Color color = getOverviewColor( name );
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
 
 				final ArrayList< Integer > indices = new ArrayList<>();
 				indices.add( sourceIndex );
-				addSourcesDisplaySettingsUI( panel, BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
+				addSourcesDisplaySettingsUI( panel,
+						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
+
+				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
+				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ]  * 2 );
 			}
-			else
+			else if ( name.contains( "hm" ) )
 			{
 				tomogramVoxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
-				tomogramSourceIndices.add( sourceIndex );
+				highMagTomogramSourceIndices.add( sourceIndex );
+				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
+				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ]  );
 			}
+			else if ( name.contains( "lm" ) )
+			{
+				lowMagTomogramSourceIndices.add( sourceIndex );
+				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
+				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ] * 2  );
+			}
+
 
 		}
 
-		// TODO: replace the whole SourceIndices List with Tobias' Group logic?!
+		addSourcesDisplaySettingsUI( panel,
+				"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY );
 
-		addSourcesDisplaySettingsUI( panel, "Tomograms", bdv, tomogramSourceIndices, Color.GRAY );
+		addSourcesDisplaySettingsUI( panel,
+				"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
 
 
+	}
+
+	private Color getOverviewColor( String name )
+	{
+		Color color;
+
+		if ( name.contains( "_ch0" ) )
+		{
+			color = Color.GRAY;
+		}
+		else if ( name.contains( "_ch1" ) )
+		{
+			color = Color.GREEN;
+		}
+		else if ( name.contains( "_ch2" ) )
+		{
+			color = Color.MAGENTA;
+		}
+		else if ( name.contains( "_ch3" ) )
+		{
+			color = Color.CYAN;
+		}
+		else
+		{
+			color = Color.GRAY;
+		}
+		return color;
+	}
+
+	public double[] getMinMax( int sourceIndex, int level ) {
+
+		final List< SourceState< ? > > sources =
+				bdv.getBdvHandle().getViewerPanel().getState().getSources();
+
+		final RandomAccessibleInterval< T > rai =
+				( RandomAccessibleInterval )
+						sources.get( sourceIndex ).getSpimSource().getSource( 0, level );
+
+		final double[] center = getCenter( rai );
+
+		final SubsampleIntervalView< T > subsampleCenterSlice =
+				Views.subsample( Views.hyperSlice( rai, 2, (long) center[ 2 ] ), 5, 5 );
+
+		Cursor<T> cursor = Views.iterable( subsampleCenterSlice ).cursor();
+		double min = Double.MAX_VALUE;
+		double max = -Double.MAX_VALUE;
+		double value;
+		while (cursor.hasNext()) {
+			value = cursor.next().getRealDouble();
+			if (value < min) min = value;
+			if (value > max) max = value;
+		}
+
+		return new double[]{ min, max };
 	}
 
 
@@ -99,15 +167,7 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 		final JButton button = new JButton( "Capture current view" );
 
-		button.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				captureView( bdv, Double.parseDouble( resolutionTextField.getText() ) );
-			}
-		} );
-
+		button.addActionListener( e -> captureView( bdv, Double.parseDouble( resolutionTextField.getText() ) ) );
 
 		horizontalLayoutPanel.add( button );
 

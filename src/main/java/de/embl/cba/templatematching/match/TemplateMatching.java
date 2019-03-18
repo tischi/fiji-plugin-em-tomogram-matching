@@ -5,7 +5,6 @@ import de.embl.cba.templatematching.CalibratedRAI;
 import de.embl.cba.templatematching.FileUtils;
 import de.embl.cba.templatematching.ImageIO;
 import de.embl.cba.templatematching.Utils;
-import de.embl.cba.bdv.utils.io.BdvRaiVolumeExport;
 import de.embl.cba.templatematching.imageprocessing.Projection;
 import de.embl.cba.transforms.utils.Scalings;
 import ij.IJ;
@@ -39,6 +38,7 @@ import java.util.Arrays;
 import static de.embl.cba.templatematching.Utils.asFloatProcessor;
 import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
+import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 {
@@ -283,6 +283,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	private boolean saveImagesAsBdvHdf5()
 	{
+		Utils.log( "# Saving results" );
 		exportTemplates();
 		exportOverview();
 		return true;
@@ -306,13 +307,14 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			// add time dimension
 			rai = Views.addDimension( rai, 0, 0 );
 
+
 			new BdvRaiXYZCTExport< T >().export(
 					rai,
 					template.file.getName(),
 					path,
 					template.calibration,
 					template.calibrationUnit,
-					template.calibratedPositionInOverview );
+					template.calibratedPosition );
 		}
 	}
 
@@ -344,14 +346,10 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		calibration[ 1 ] = overviewCalibrationNanometer;
 		calibration[ 2 ] = 2000;
 
-		double[] offset = new double[ 3 ];
+		double[] translation = new double[ 3 ];
+		translation[ 2 ] = - 0.5 * calibration[ 2 ]; // center around 0
 
 		String path = getOutputPath( "overview" );
-
-//		Utils.log( "Copy rotated overview image to RAM for faster saving..." );
-//		final RandomAccessibleInterval< T > copy = Utils.copyAsArrayImg( overview );
-
-		Utils.log( "Saving overview image in bdv.h5 format..." );
 
 		if ( ! overviewIs3D ) // add z-dimension
 			overview = Views.addDimension( overview, 0, 0 );
@@ -368,7 +366,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				path,
 				calibration,
 				"nanometer",
-				offset );
+				translation );
 	}
 
 	private void matchTemplate( File templateFile )
@@ -399,13 +397,22 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		final double[] position = getCalibratedPosition( positionInSubSampledOverview );
 
+		// set z position to template center
+		final double[] center = getCenter( template );
+		position[ 2 ] = - center[ 2 ];
+
 		final MatchedTemplate matchedTemplate = new MatchedTemplate();
 
 		if ( settings.allTemplatesFitInRAM )
 			matchedTemplate.rai = template;
+		else
+		{
+			template = null;
+			System.gc();
+		}
 
 		matchedTemplate.file = templateFile;
-		matchedTemplate.calibratedPositionInOverview = position;
+		matchedTemplate.calibratedPosition = position;
 		matchedTemplate.calibration = templateCalibrationNanometer;
 		matchedTemplate.calibrationUnit = "nanometer";
 
@@ -429,7 +436,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		RandomAccessibleInterval< T > rai;
 		File file;
-		double[] calibratedPositionInOverview;
+		double[] calibratedPosition;
 		double[] calibration;
 		String calibrationUnit;
 	}
@@ -445,7 +452,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		final double[] position = computePositionWithinOverviewImage( template );
 
-		showBestMatchOnOverview( template, position );
+		if ( settings.showIntermediateResults )
+			showBestMatchOnOverview( template, position );
 
 		return position;
 	}
@@ -454,17 +462,15 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			RandomAccessibleInterval< T > template,
 			double[] position )
 	{
+		Utils.log( "Show match in overview image..." );
 
 		final int[] intPosition = new int[ position.length ];
 		for ( int d = 0; d < position.length; d++ )
 			intPosition[ d ] = (int) position[ d ];
 
-		if ( settings.showIntermediateResults )
-		{
-			matchingOverlay.add( getRectangleRoi( template, intPosition ) );
-			matchingOverlay.add( getTextRoi( intPosition ) );
-			overviewForMatchingImagePlus.setOverlay( matchingOverlay );
-		}
+		matchingOverlay.add( getRectangleRoi( template, intPosition ) );
+		matchingOverlay.add( getTextRoi( intPosition ) );
+		overviewForMatchingImagePlus.setOverlay( matchingOverlay );
 	}
 
 	private Roi getRectangleRoi(
@@ -542,6 +548,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
 
+		Utils.log( "X-correlation..." );
+
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewForMatchingImagePlus.getProcessor(),
 				templateProcessor,
@@ -551,7 +559,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			new ImagePlus( ""+ templateIndex +" correlation",
 					correlation ).show();
 
+		Utils.log( "Find maximum in x-correlation..." );
+
 		final int[] position = findMaximumPosition( correlation );
+
+		Utils.log( "Refine maximum to sub-pixel resolution..." );
 
 		final double[] refinedPosition = computeRefinedPosition( correlation, position );
 

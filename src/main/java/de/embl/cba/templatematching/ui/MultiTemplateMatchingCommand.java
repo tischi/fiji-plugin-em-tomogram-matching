@@ -78,7 +78,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 			MatchedTemplatesBrowsingSettings browsingSettings
 					= new MatchedTemplatesBrowsingSettings();
 			browsingSettings.inputDirectory = settings.outputDirectory;
-			new MatchedTemplatesBrowser( browsingSettings );
+			new MatchedTemplatesBrowser( browsingSettings ).run();
 		}
 		else
 		{
@@ -94,7 +94,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.overviewImageFile = overviewImage;
 		settings.templatesInputDirectory = tomogramInputDirectory;
 		settings.overviewAngleDegrees = tomogramAngleDegrees;
-		settings.showIntermediateResults = !runSilent;
+		settings.showIntermediateResults = ! runSilent;
 		settings.confirmScalingViaUI = false;
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 		settings.allTemplatesFitInRAM = allTemplatesFitInRAM;
