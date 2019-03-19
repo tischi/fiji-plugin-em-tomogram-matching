@@ -307,7 +307,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 			// add time dimension
 			rai = Views.addDimension( rai, 0, 0 );
 
-
 			new BdvRaiXYZCTExport< T >().export(
 					rai,
 					template.file.getName(),
@@ -347,7 +346,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		calibration[ 2 ] = 2000;
 
 		double[] translation = new double[ 3 ];
-		translation[ 2 ] = - 0.5 * calibration[ 2 ]; // center around 0
 
 		String path = getOutputPath( "overview" );
 
@@ -399,7 +397,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		// set z position to template center
 		final double[] center = getCenter( template );
-		position[ 2 ] = - center[ 2 ];
+		position[ 2 ] = - center[ 2 ] * templateCalibrationNanometer[ 2 ];
 
 		final MatchedTemplate matchedTemplate = new MatchedTemplate();
 
