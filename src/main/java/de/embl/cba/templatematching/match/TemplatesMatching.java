@@ -265,6 +265,8 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		if ( overviewRaiPlus.isMultiChannel ) // swap z and channel dimension
 			overview = Views.permute( overview, 2, 3 );
+		else
+			overview = Views.addDimension( overview, 0, 0 );
 
 		// add time dimension
 		overview = Views.addDimension( overview, 0, 0 );
@@ -287,11 +289,11 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		final int[] pixelPosition = new int[ 2 ];
 		pixelPosition[ 0 ] = ( int ) ( position[ 0 ] / overviewImagePlus.getCalibration().pixelWidth );
-		pixelPosition[ 1 ] = ( int ) ( position[ 0 ] / overviewImagePlus.getCalibration().pixelHeight );
+		pixelPosition[ 1 ] = ( int ) ( position[ 1 ] / overviewImagePlus.getCalibration().pixelHeight );
 
 		final int[] templateSizePixel = new int[ 2 ];
 		templateSizePixel[ 0 ] = ( int ) ( size[ 0 ] / overviewImagePlus.getCalibration().pixelWidth );
-		templateSizePixel[ 1 ] = ( int ) ( size[ 0 ] / overviewImagePlus.getCalibration().pixelHeight );
+		templateSizePixel[ 1 ] = ( int ) ( size[ 1 ] / overviewImagePlus.getCalibration().pixelHeight );
 
 		matchingOverlay.add( getRectangleRoi( pixelPosition, templateSizePixel ) );
 		matchingOverlay.add( getTextRoi( templateSizePixel ) );
