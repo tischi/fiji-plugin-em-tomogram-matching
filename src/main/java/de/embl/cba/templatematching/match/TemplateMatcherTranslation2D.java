@@ -2,9 +2,6 @@ package de.embl.cba.templatematching.match;
 
 import de.embl.cba.templatematching.image.CalibratedRai;
 import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.image.DefaultCalibratedRai;
-import de.embl.cba.templatematching.imageprocessing.Projection;
-import de.embl.cba.transforms.utils.Scalings;
 import ij.ImagePlus;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
@@ -15,18 +12,15 @@ import net.imglib2.algorithm.localextrema.SubpixelLocalization;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.Views;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
-import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 import static de.embl.cba.templatematching.Utils.showIntermediateResults;
+import static de.embl.cba.templatematching.process.ImageProcessor.*;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType< T > >
 {
-
 	public static final int CV_TM_SQDIFF = 0;
 	public static final int CORRELATION = 4;
 	public static final int NORMALIZED_CORRELATION = 5;
@@ -43,11 +37,12 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 	public MatchedTemplate match( CalibratedRai< T > template )
 	{
-		final CalibratedRai< T > subSampled = subSample( template, getSubSampling() );
+		// sub-sampling first makes projection faster
+		final CalibratedRai< T > subSampled = subSample( template, getSubSamplingXY( template ) );
 
 		CalibratedRai< T > projected = project( subSampled );
 
-		CalibratedRai< T > downscaled = downscale( projected, getDownScaling() );
+		CalibratedRai< T > downscaled = downscale( projected, getDownScalingXY( template ) );
 
 		final double[] calibratedPosition = findPositionWithinOverviewImage( downscaled.rai() );
 
@@ -64,7 +59,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		final double[] center = getCenter( template.rai() );
 		positionNanometer[ 2 ] = - center[ 2 ] * template.nanometerCalibration()[ 2 ];
 
-		return new MatchedTemplate( template, positionNanometer);;
+		return new MatchedTemplate( template, positionNanometer);
 	}
 
 	private double[] getCalibratedPosition3D( double[] pixelPosition )
@@ -78,101 +73,28 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 	}
 
 
-	public CalibratedRai subSample( CalibratedRai input, long[] templateSubSampling )
+	private long[] getSubSamplingXY( CalibratedRai< T > template )
 	{
-		final long[] subSampling = getSubSampling();
+		final long[] subSampling = new long[ 3 ];
 
-		final RandomAccessibleInterval< ? extends RealType< ? > > subSampled =
-				Views.subsample( input.rai(), subSampling );
+		for ( int d = 0; d < 2; d++ )
+			subSampling[ d ] = (long) ( overviewPixelSizeNanometer[ d ]
+					/ template.nanometerCalibration()[ d ] );
 
-		final double[] newCalibration = getNewCalibration( input, Utils.asDoubles( subSampling ) );
+		subSampling[ 3 ] = 1;
 
-		return new DefaultCalibratedRai( subSampled, newCalibration );
+		return subSampling;
 	}
 
-	private long[] getSubSampling()
+	private double[] getDownScalingXY( CalibratedRai< T > calibratedRai )
 	{
-		// determine based on pixel sizes of overview and template
-		return new long[]{ subSampling, subSampling, 1 };
-	}
+		final double[] scaling = new double[ 2 ];
 
-	private CalibratedRai project( CalibratedRai input )
-	{
-		Utils.log( "Computing template average projection..." );
-
-		if ( input.rai().numDimensions() == 3 )
-		{
-			final RandomAccessibleInterval< T > average =
-					new Projection( input.rai(), 2 ).average();
-			return new DefaultCalibratedRai( average, input.nanometerCalibration() );
-		}
-		else
-		{
-			return input;
-		}
-
-	}
-
-	/**
-	 * Downscales the template to matchToOverview resolution of overview image.
-	 * Note that both overview and template may been sub-sampled already.
-	 * However, as both have been sub-sampled with the same factor,
-	 * the relative downscaling factor here still is correct.
-	 * @param input
-	 * @return
-	 */
-	private DefaultCalibratedRai< T >
-	downscale( CalibratedRai< T > input, double[] scalings )
-	{
-		Utils.log( "Scaling to overview image resolution..." );
-
-		RandomAccessibleInterval< T > downscaled
-				= Scalings.createRescaledArrayImg( input.rai(), scalings );
-
-		showIntermediateResult( downscaled, "downscaled" );
-
-		final double[] newCalibration = getNewCalibration( input, scalings );
-
-		return new DefaultCalibratedRai( downscaled, newCalibration );
-	}
-
-	private double[] getNewCalibration( CalibratedRai input, double[] scalings )
-	{
-		final int n = input.rai().numDimensions();
-		final double[] newCalibration = new double[ n ];
-		for ( int d = 0; d < n; d++ )
-		{
-			newCalibration[ d ] = input.nanometerCalibration()[ d ]
-					* scalings[ d ];
-		}
-		return newCalibration;
-
-	}
-
-	private double[] getDownScaling( int numDimensions )
-	{
-		final double scalingRatio =
-				templatePixelSizeNanometer[ 0 ] / overviewPixelSizeNanometer[ 0 ];
-
-		final double[] scaling = new double[ numDimensions ];
-		Arrays.fill( scaling, scalingRatio );
-
-		Utils.log( "Template pixel size [nm]: " + templatePixelSizeNanometer[ 0 ] );
-		Utils.log( "Overview pixel size [nm]: " + overviewPixelSizeNanometer[ 0 ] );
-
-		Utils.log( "Scaling factor: " +  scalingRatio );
+		for ( int d = 0; d < 2; d++ )
+			scaling[ d ] = (long) ( overviewPixelSizeNanometer[ d ]
+					/ calibratedRai.nanometerCalibration()[ d ] );
 
 		return scaling;
-	}
-
-
-	private double[] matchToOverview( CalibratedRai< T > template )
-	{
-		Utils.log( "Finding best match in overview image..." );
-
-
-
-		return position;
 	}
 
 	private double[] findPositionWithinOverviewImage( RandomAccessibleInterval< T > template )
@@ -238,24 +160,5 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		return maxPos;
 	}
 
-
-	public static int[] findMax( ImageProcessor ip ) {
-		int[] coord = new int[2];
-		float max = ip.getPixel(0, 0);
-		final int sWh = ip.getHeight();
-		final int sWw = ip.getWidth();
-
-		for (int j = 0; j < sWh; j++) {
-			for (int i = 0; i < sWw; i++) {
-				if (ip.getPixel(i, j) > max) {
-					max = ip.getPixel(i, j);
-					coord[0] = i;
-					coord[1] = j;
-				}
-			}
-		}
-
-		return (coord);
-	}
 
 }
