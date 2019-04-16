@@ -13,4 +13,5 @@ public class TemplateMatchingSettings
 	public double matchingPixelSpacingNanometer;
 	public boolean allTemplatesFitInRAM;
 	public String templatesRegExp = ".*_hm.rec";
+	public boolean isHierarchicalMatching;
 }

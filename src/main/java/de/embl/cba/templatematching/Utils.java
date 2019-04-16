@@ -36,10 +36,9 @@ import net.imglib2.view.Views;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -116,6 +115,13 @@ public class Utils
 	public static  < T extends RealType< T > & NativeType< T > >
 	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai )
 	{
+		return asFloatProcessor( rai, 0 );
+	}
+
+	public static  < T extends RealType< T > & NativeType< T > >
+	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai,
+									 final int addNoiseLevel )
+	{
 		Utils.log( "Converting RandomAccessibleInterval to FloatProcessor..." );
 
 		RandomAccessibleInterval< T > rai2D = rai;
@@ -131,9 +137,15 @@ public class Utils
 
 		final Cursor< T > inputCursor = Views.flatIterable( rai2D ).cursor();
 		int i = 0;
+
+
 		while( inputCursor.hasNext() )
 		{
 			floats[ i++ ] = ( float ) inputCursor.next().getRealDouble();
+			if ( addNoiseLevel > 0 )
+				floats[ i++ ] +=
+						ThreadLocalRandom.current()
+								.nextInt(0, addNoiseLevel + 1);
 		}
 
 		final FloatProcessor floatProcessor = new FloatProcessor( w, h, floats );

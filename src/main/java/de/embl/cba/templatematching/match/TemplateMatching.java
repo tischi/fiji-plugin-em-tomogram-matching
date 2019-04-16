@@ -61,11 +61,13 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private double overviewCalibrationNanometer;
 	private boolean overviewIs3D;
 	private boolean overviewIsMultiChannel;
+	private int addNoiseLevel;
 
 	public TemplateMatching( TemplateMatchingSettings settings )
 	{
 		this.settings = settings;
 		templateIndex = 0;
+		addNoiseLevel = 5; // TODO: 5 is very random...
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
@@ -136,11 +138,10 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatching = Views.subsample( overview, overviewSubSampling );
 
+		addNoiseLevel = 5;
 		createOverviewForMatchingImagePlus(
-				asFloatProcessor( overviewForMatching ),
+				asFloatProcessor( overviewForMatching, addNoiseLevel ),
 				overviewSubSampling );
-
-		addNoiseToOverview( overviewForMatchingImagePlus );
 
 		if ( settings.showIntermediateResults )
 			overviewForMatchingImagePlus.show();
@@ -160,6 +161,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				overviewCalibrationNanometer * overviewSubSampling[ 0 ];
 		calibration.pixelHeight =
 				overviewCalibrationNanometer * overviewSubSampling[ 1 ];
+
 		calibration.setUnit( "nanometer" );
 	}
 
@@ -284,8 +286,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private boolean saveImagesAsBdvHdf5()
 	{
 		Utils.log( "# Saving results" );
-		exportTemplates();
 		exportOverview();
+		exportTemplates();
 		return true;
 	}
 
@@ -544,7 +546,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private double[] computePositionWithinOverviewImage(
 			RandomAccessibleInterval< T > template )
 	{
-		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
+		final ImageProcessor templateProcessor =
+				Utils.asFloatProcessor( template );
 
 		Utils.log( "X-correlation..." );
 

@@ -43,7 +43,10 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 	public double pixelSpacingDuringMatching =
 			settings.matchingPixelSpacingNanometer;
 
-	@Parameter ( label = "All Images fit into RAM (faster writing)" )
+	@Parameter ( label = "Hierarchical matching" )
+	boolean isHierarchicalMatching = false;
+
+//	@Parameter ( label = "All Images fit into RAM (faster writing)" )
 	boolean allTemplatesFitInRAM = false;
 
 	@Parameter ( label = "Run Silent" )
@@ -81,6 +84,7 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 		settings.allTemplatesFitInRAM = allTemplatesFitInRAM;
 		settings.templatesRegExp = templatesRegExp;
+		settings.isHierarchicalMatching = isHierarchicalMatching;
 	}
 
 
