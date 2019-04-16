@@ -3,6 +3,7 @@ package de.embl.cba.templatematching;
 import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
 import bdv.util.Bdv;
+import de.embl.cba.templatematching.image.CalibratedRai;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ByteProcessor;
@@ -102,14 +103,28 @@ public class Utils
 		return cellPos;
 	}
 
-	public static void showIntermediateResult(
-			RandomAccessibleInterval rai, String title )
+	public static void showIntermediateResult( RandomAccessibleInterval rai, String title )
 	{
 		if ( showIntermediateResults )
 		{
 			ImageJFunctions.show( rai, title );
 		}
+	}
 
+	public static void showIntermediateResult( CalibratedRai calibratedRai, String title )
+	{
+		if ( showIntermediateResults )
+			getImagePlus( calibratedRai, title ).show();
+
+	}
+
+	public static ImagePlus getImagePlus( CalibratedRai calibratedRai, String title )
+	{
+		final ImagePlus wrap = ImageJFunctions.wrap( calibratedRai.rai(), title );
+		wrap.getCalibration().pixelHeight = calibratedRai.nanometerCalibration()[ 0 ];
+		wrap.getCalibration().pixelWidth = calibratedRai.nanometerCalibration()[ 1 ];
+		wrap.getCalibration().setUnit( "nanometer" );
+		return wrap;
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
@@ -125,11 +140,8 @@ public class Utils
 		Utils.log( "Converting RandomAccessibleInterval to FloatProcessor..." );
 
 		RandomAccessibleInterval< T > rai2D = rai;
-
 		if ( rai.numDimensions() == 3 )
-		{
 			rai2D = Views.hyperSlice( rai, 2, 0 );
-		}
 
 		int w = (int) rai2D.dimension( 0 );
 		int h = (int) rai2D.dimension( 1 );
@@ -138,14 +150,14 @@ public class Utils
 		final Cursor< T > inputCursor = Views.flatIterable( rai2D ).cursor();
 		int i = 0;
 
-
 		while( inputCursor.hasNext() )
 		{
-			floats[ i++ ] = ( float ) inputCursor.next().getRealDouble();
+			floats[ i ] = ( float ) inputCursor.next().getRealDouble();
 			if ( addNoiseLevel > 0 )
-				floats[ i++ ] +=
+				floats[ i ] +=
 						ThreadLocalRandom.current()
 								.nextInt(0, addNoiseLevel + 1);
+			i++;
 		}
 
 		final FloatProcessor floatProcessor = new FloatProcessor( w, h, floats );
@@ -551,12 +563,12 @@ public class Utils
 		return doubles;
 	}
 
-	public static double[] asDoubles( long[] longs )
+	public static double[] asReciprocalDoubles( long[] longs )
 	{
 		double[] doubles = new double[ longs.length ];
 
 		for ( int i = 0; i < longs.length; ++i )
-			doubles[ i ] = ( double ) longs[ i ];
+			doubles[ i ] = 1.0 / longs[ i ];
 
 		return doubles;
 	}

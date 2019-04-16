@@ -13,6 +13,8 @@ import ij.gui.*;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import net.imglib2.*;
+import net.imglib2.img.ImgView;
+import net.imglib2.img.display.imagej.ImgPlusViews;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
@@ -30,16 +32,10 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private final TemplatesMatchingSettings settings;
 	private ArrayList< File > templateFiles;
 	private RandomAccessibleInterval< T > overview;
-	private RandomAccessibleInterval< T > overviewForMatching;
 	private Overlay matchingOverlay;
-	private ImagePlus overviewForMatchingImagePlus;
+	private ImagePlus overviewImagePlus;
 	private int templateIndex;
-	private double[] templateCalibrationNanometer;
 	private ArrayList< MatchedTemplate > matchedTemplates;
-	private double[] scaling;
-	private double overviewCalibrationNanometer;
-	private boolean overviewIs3D;
-	private boolean overviewIsMultiChannel;
 	private int addNoiseLevel;
 	private double[] overviewProcessorPixelSizeNanometer = new double[ 2 ];
 	private CalibratedRaiPlus< T > overviewRaiPlus;
@@ -112,9 +108,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			final CalibratedRaiPlus< T > template = openImage( templateFile );
 
 			final TemplateMatcherTranslation2D templateMatcherTranslation2D
-					= new TemplateMatcherTranslation2D(
-					overviewForMatchingImagePlus.getProcessor(),
-					overviewProcessorPixelSizeNanometer );
+					= new TemplateMatcherTranslation2D( overviewImagePlus );
 
 			final MatchedTemplate matchedTemplate = templateMatcherTranslation2D.match( template );
 
@@ -142,15 +136,18 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		final long[] overviewSubSampling = getOverviewSubSamplingXY();
 
+		Utils.log( "Sub-sampling overview image by: " + overviewSubSampling[ 0 ] );
 		final CalibratedRai< T > subSampled =
 				Processor.subSample( rotated, overviewSubSampling );
+
+		// TODO: one should also downsample to get to the actually requested calibration pixel size!
 
 		createOverviewForMatching(
 				asFloatProcessor( subSampled.rai(), addNoiseLevel ),
 				overviewSubSampling );
 
 		if ( settings.showIntermediateResults )
-			overviewForMatchingImagePlus.show();
+			overviewImagePlus.show();
 
 	}
 
@@ -158,20 +155,16 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			FloatProcessor overviewProcessor,
 			long[] overviewSubSampling )
 	{
-		overviewForMatchingImagePlus = new ImagePlus(
+		overviewImagePlus = new ImagePlus(
 				"Overview for matching", overviewProcessor );
 
-		final Calibration calibration = overviewForMatchingImagePlus.getCalibration();
-
+		final Calibration calibration = overviewImagePlus.getCalibration();
 		calibration.pixelWidth =
-				overviewCalibrationNanometer * overviewSubSampling[ 0 ];
+				overviewRaiPlus.nanometerCalibration()[ 0 ] * overviewSubSampling[ 0 ];
 		calibration.pixelHeight =
-				overviewCalibrationNanometer * overviewSubSampling[ 1 ];
-
+				overviewRaiPlus.nanometerCalibration()[ 1 ] * overviewSubSampling[ 1 ];
 		calibration.setUnit( "nanometer" );
 
-		overviewProcessorPixelSizeNanometer[ 0 ] = calibration.pixelWidth;
-		overviewProcessorPixelSizeNanometer[ 1 ] = calibration.pixelHeight;
 	}
 
 	private long[] getOverviewSubSamplingXY()
@@ -181,20 +174,14 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 		for ( int d = 0; d < 2; d++ )
 			subSampling[ d ] = (long) (
 					settings.matchingPixelSpacingNanometer
-							/ overviewProcessorPixelSizeNanometer[ d ] );
+							/ overviewRaiPlus.nanometerCalibration()[ d ] );
 
-		if ( overview.numDimensions() == 2 )
-		{
+		if ( overviewRaiPlus.rai().numDimensions() == 2 )
 			return new long[]{ subSampling[ 0 ], subSampling[ 1 ] };
-		}
-		else if ( overview.numDimensions() == 3 )
-		{
+		else if ( overviewRaiPlus.rai().numDimensions() == 3 )
 			return new long[]{ subSampling[ 0 ], subSampling[ 1 ], 1 };
-		}
 		else
-		{
 			return null;
-		}
 	}
 
 
@@ -268,18 +255,18 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 		Utils.log( "Exporting overview image..." );
 
 		double[] calibration = new double[ 3 ];
-		calibration[ 0 ] = overviewCalibrationNanometer;
-		calibration[ 1 ] = overviewCalibrationNanometer;
+		calibration[ 0 ] = overviewRaiPlus.nanometerCalibration()[ 0 ];
+		calibration[ 1 ] = overviewRaiPlus.nanometerCalibration()[ 1 ];
 		calibration[ 2 ] = 2000;
 
 		double[] translation = new double[ 3 ];
 
 		String path = getOutputPath( "overview" );
 
-		if ( !overviewIs3D ) // add z-dimension
+		if ( !overviewRaiPlus.is3D ) // add z-dimension
 			overview = Views.addDimension( overview, 0, 0 );
 
-		if ( overviewIsMultiChannel ) // swap z and channel dimension
+		if ( overviewRaiPlus.isMultiChannel ) // swap z and channel dimension
 			overview = Views.permute( overview, 2, 3 );
 
 		// add time dimension
@@ -303,16 +290,16 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		final int[] pixelPosition = new int[ position.length ];
 		for ( int d = 0; d < position.length; d++ )
-			pixelPosition[ d ] = ( int ) ( position[ d ] / overviewCalibrationNanometer );
+			pixelPosition[ d ] = ( int ) ( position[ d ] / overviewProcessorPixelSizeNanometer[ d ] );
 
 		final int[] templateSizePixel = new int[ position.length ];
 		for ( int d = 0; d < position.length; d++ )
-			templateSizePixel[ d ] = ( int ) ( size[ d ] / overviewCalibrationNanometer );
+			templateSizePixel[ d ] = ( int ) ( size[ d ] / overviewProcessorPixelSizeNanometer[ d ] );
 
 		matchingOverlay.add( getRectangleRoi( pixelPosition, templateSizePixel ) );
 		matchingOverlay.add( getTextRoi( templateSizePixel ) );
 
-		overviewForMatchingImagePlus.setOverlay( matchingOverlay );
+		overviewImagePlus.setOverlay( matchingOverlay );
 	}
 
 	private Roi getRectangleRoi( int[] position, int[] size )

@@ -15,6 +15,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
 
+import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 import static de.embl.cba.templatematching.Utils.showIntermediateResults;
 import static de.embl.cba.templatematching.process.Processor.*;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
@@ -28,11 +29,12 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 	private final ImageProcessor overview;
 	private final double[] overviewPixelSizeNanometer;
 
-	public TemplateMatcherTranslation2D( ImageProcessor overview,
-										 double[] overviewPixelSizeNanometer )
+	public TemplateMatcherTranslation2D( ImagePlus overview )
 	{
-		this.overview = overview;
-		this.overviewPixelSizeNanometer = overviewPixelSizeNanometer;
+		this.overview = overview.getProcessor();
+		this.overviewPixelSizeNanometer = new double[]{
+				overview.getCalibration().pixelWidth,
+				overview.getCalibration().pixelHeight};
 	}
 
 	public MatchedTemplate match( CalibratedRai< T > template )
@@ -42,7 +44,9 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 		CalibratedRai< T > projected = project( subSampled );
 
-		CalibratedRai< T > downscaled = downscale( projected, getDownScalingXY( template ) );
+		CalibratedRai< T > downscaled = scale( projected, getScalingsXY( projected ) );
+
+		showIntermediateResult( downscaled, "downscaled" );
 
 		final double[] calibratedPosition = findPositionWithinOverviewImage( downscaled.rai() );
 
@@ -75,26 +79,29 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 	private long[] getSubSamplingXY( CalibratedRai< T > template )
 	{
-		final long[] subSampling = new long[ 3 ];
+		final int numDimensions = template.rai().numDimensions();
+
+		final long[] subSampling = new long[ numDimensions ];
 
 		for ( int d = 0; d < 2; d++ )
 			subSampling[ d ] = (long) ( overviewPixelSizeNanometer[ d ]
 					/ template.nanometerCalibration()[ d ] );
 
-		subSampling[ 3 ] = 1;
+		if ( numDimensions == 3 )
+			subSampling[ 2 ] = 1;
 
 		return subSampling;
 	}
 
-	private double[] getDownScalingXY( CalibratedRai< T > calibratedRai )
+	private double[] getScalingsXY( CalibratedRai< T > calibratedRai )
 	{
-		final double[] scaling = new double[ 2 ];
+		final double[] scalings = new double[ 2 ];
+		final double[] calibration = calibratedRai.nanometerCalibration();
 
 		for ( int d = 0; d < 2; d++ )
-			scaling[ d ] = (long) ( overviewPixelSizeNanometer[ d ]
-					/ calibratedRai.nanometerCalibration()[ d ] );
+			scalings[ d ] = calibration[ d ] / overviewPixelSizeNanometer[ d ];
 
-		return scaling;
+		return scalings;
 	}
 
 	private double[] findPositionWithinOverviewImage( RandomAccessibleInterval< T > template )

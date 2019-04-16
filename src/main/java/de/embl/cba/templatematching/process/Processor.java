@@ -31,7 +31,7 @@ public abstract class Processor
 				Views.subsample( input.rai(), subSampling );
 
 		final double[] newCalibration =
-				getNewCalibration( input, Utils.asDoubles( subSampling ) );
+				getNewCalibration( input, Utils.asReciprocalDoubles( subSampling ) );
 
 		return new DefaultCalibratedRai( subSampled, newCalibration );
 	}
@@ -63,18 +63,14 @@ public abstract class Processor
 	 * @return
 	 */
 	public static < T extends RealType< T > & NativeType< T > >
-	CalibratedRai< T > downscale( CalibratedRai< T > input, double[] scalings )
+	CalibratedRai< T > scale( CalibratedRai< T > input, double[] scalings )
 	{
 		Utils.log( "Scaling to overview image resolution..." );
 
 		RandomAccessibleInterval< T > downscaled
 				= Scalings.createRescaledArrayImg( input.rai(), scalings );
 
-		showIntermediateResult( downscaled, "downscaled" );
-
-		final double[] newCalibration = getNewCalibration( input, scalings );
-
-		return new DefaultCalibratedRai( downscaled, newCalibration );
+		return new DefaultCalibratedRai( downscaled, getNewCalibration( input, scalings ) );
 	}
 
 	public static double[] getNewCalibration( CalibratedRai input, double[] scalings )
@@ -82,10 +78,8 @@ public abstract class Processor
 		final int n = input.rai().numDimensions();
 		final double[] newCalibration = new double[ n ];
 		for ( int d = 0; d < n; d++ )
-		{
-			newCalibration[ d ] = input.nanometerCalibration()[ d ]
-					* scalings[ d ];
-		}
+			newCalibration[ d ] = input.nanometerCalibration()[ d ] / scalings[ d ];
+
 		return newCalibration;
 
 	}

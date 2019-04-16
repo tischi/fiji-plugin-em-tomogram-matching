@@ -49,10 +49,10 @@ public class ApplyTransformationFromImageFile
 		final CalibratedRaiPlus< T > em = ImageIO.withBFopenRAI(
 				new File( "/Volumes/cba/exchange/Giulia/TomoMatching3/polyA1_merged_s0.mrc" ) );
 
-		final BdvStackSource< T > emSource = BdvFunctions.show( em.rai, "em",
-				BdvOptions.options().sourceTransform( em.nanometerCalibration ).is2D() );
+		final BdvStackSource< T > emSource = BdvFunctions.show( em.rai(), "em",
+				BdvOptions.options().sourceTransform( em.nanometerCalibration() ).is2D() );
 
-		final BdvStackSource< T > fluoSource = BdvFunctions.show( fluorescence.rai, "fluo",
+		final BdvStackSource< T > fluoSource = BdvFunctions.show( fluorescence.rai(), "fluo",
 				BdvOptions.options()
 						.sourceTransform( transform3D )
 						.addTo( emSource.getBdvHandle() )
