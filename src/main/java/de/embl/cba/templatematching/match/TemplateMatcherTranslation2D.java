@@ -59,9 +59,13 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 			CalibratedRai< T > template,
 			double[] positionNanometer )
 	{
-		// set z position to template center
-		final double[] center = getCenter( template.rai() );
-		positionNanometer[ 2 ] = - center[ 2 ] * template.nanometerCalibration()[ 2 ];
+
+		if ( template.rai().numDimensions() == 3)
+		{
+			// set z position to template center
+			final double[] center = getCenter( template.rai() );
+			positionNanometer[ 2 ] = ( -center[ 2 ] ) * template.nanometerCalibration()[ 2 ];
+		}
 
 		return new MatchedTemplate( template, positionNanometer);
 	}

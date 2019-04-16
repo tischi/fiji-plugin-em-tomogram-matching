@@ -1,20 +1,18 @@
 package de.embl.cba.templatematching.match;
 
 import de.embl.cba.bdv.utils.io.BdvRaiXYZCTExport;
-import de.embl.cba.templatematching.image.CalibratedRai;
-import de.embl.cba.templatematching.image.CalibratedRaiPlus;
 import de.embl.cba.templatematching.FileUtils;
 import de.embl.cba.templatematching.ImageIO;
 import de.embl.cba.templatematching.Utils;
+import de.embl.cba.templatematching.image.CalibratedRai;
+import de.embl.cba.templatematching.image.CalibratedRaiPlus;
 import de.embl.cba.templatematching.image.DefaultCalibratedRai;
 import de.embl.cba.templatematching.process.Processor;
 import ij.ImagePlus;
 import ij.gui.*;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
-import net.imglib2.*;
-import net.imglib2.img.ImgView;
-import net.imglib2.img.display.imagej.ImgPlusViews;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
@@ -23,7 +21,6 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
-
 import static de.embl.cba.templatematching.Utils.asFloatProcessor;
 
 public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
@@ -31,13 +28,11 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 	private final TemplatesMatchingSettings settings;
 	private ArrayList< File > templateFiles;
-	private RandomAccessibleInterval< T > overview;
 	private Overlay matchingOverlay;
 	private ImagePlus overviewImagePlus;
 	private int templateIndex;
 	private ArrayList< MatchedTemplate > matchedTemplates;
 	private int addNoiseLevel;
-	private double[] overviewProcessorPixelSizeNanometer = new double[ 2 ];
 	private CalibratedRaiPlus< T > overviewRaiPlus;
 
 	public TemplatesMatching( TemplatesMatchingSettings settings )
@@ -263,7 +258,9 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		String path = getOutputPath( "overview" );
 
-		if ( !overviewRaiPlus.is3D ) // add z-dimension
+		RandomAccessibleInterval< T > overview = overviewRaiPlus.rai();
+
+		if ( ! overviewRaiPlus.is3D ) // add z-dimension
 			overview = Views.addDimension( overview, 0, 0 );
 
 		if ( overviewRaiPlus.isMultiChannel ) // swap z and channel dimension
@@ -288,13 +285,13 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 		final double[] position = matchedTemplate.matchedPositionNanometer;
 		final double[] size = matchedTemplate.getImageSizeNanometer();
 
-		final int[] pixelPosition = new int[ position.length ];
-		for ( int d = 0; d < position.length; d++ )
-			pixelPosition[ d ] = ( int ) ( position[ d ] / overviewProcessorPixelSizeNanometer[ d ] );
+		final int[] pixelPosition = new int[ 2 ];
+		pixelPosition[ 0 ] = ( int ) ( position[ 0 ] / overviewImagePlus.getCalibration().pixelWidth );
+		pixelPosition[ 1 ] = ( int ) ( position[ 0 ] / overviewImagePlus.getCalibration().pixelHeight );
 
-		final int[] templateSizePixel = new int[ position.length ];
-		for ( int d = 0; d < position.length; d++ )
-			templateSizePixel[ d ] = ( int ) ( size[ d ] / overviewProcessorPixelSizeNanometer[ d ] );
+		final int[] templateSizePixel = new int[ 2 ];
+		templateSizePixel[ 0 ] = ( int ) ( size[ 0 ] / overviewImagePlus.getCalibration().pixelWidth );
+		templateSizePixel[ 1 ] = ( int ) ( size[ 0 ] / overviewImagePlus.getCalibration().pixelHeight );
 
 		matchingOverlay.add( getRectangleRoi( pixelPosition, templateSizePixel ) );
 		matchingOverlay.add( getTextRoi( templateSizePixel ) );
