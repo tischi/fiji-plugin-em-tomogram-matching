@@ -1,23 +1,15 @@
 package de.embl.cba.templatematching.match;
 
 import de.embl.cba.bdv.utils.io.BdvRaiXYZCTExport;
-import de.embl.cba.templatematching.CalibratedRAI;
+import de.embl.cba.templatematching.image.CalibratedRaiPlus;
 import de.embl.cba.templatematching.FileUtils;
 import de.embl.cba.templatematching.ImageIO;
 import de.embl.cba.templatematching.Utils;
-import de.embl.cba.templatematching.imageprocessing.Projection;
-import de.embl.cba.transforms.utils.Scalings;
-import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.*;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
 import net.imglib2.*;
-import net.imglib2.Point;
-import net.imglib2.algorithm.localextrema.RefinedPeak;
-import net.imglib2.algorithm.localextrema.SubpixelLocalization;
-import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.AffineTransform2D;
 import net.imglib2.realtransform.AffineTransform3D;
@@ -32,22 +24,15 @@ import net.imglib2.view.Views;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 
 import static de.embl.cba.templatematching.Utils.asFloatProcessor;
-import static de.embl.cba.templatematching.Utils.showIntermediateResult;
-import static de.embl.cba.transforms.utils.Transforms.createBoundingIntervalAfterTransformation;
-import static de.embl.cba.transforms.utils.Transforms.getCenter;
+import static de.embl.cba.transforms.utils.Transforms.*;
 
-public class TemplateMatching < T extends RealType< T > & NativeType< T > >
+public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 {
 
-	public static final int CV_TM_SQDIFF = 0;
-	public static final int CORRELATION = 4;
-	public static final int NORMALIZED_CORRELATION = 5;
-
-	private final TemplateMatchingSettings settings;
+	private final TemplatesMatchingSettings settings;
 	private ArrayList< File > templateFiles;
 	private RandomAccessibleInterval< T > overview;
 	private RandomAccessibleInterval< T > overviewForMatching;
@@ -62,12 +47,14 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	private boolean overviewIs3D;
 	private boolean overviewIsMultiChannel;
 	private int addNoiseLevel;
+	private double[] overviewProcessorPixelSizeNanometer = new double[ 2 ];
 
-	public TemplateMatching( TemplateMatchingSettings settings )
+	public TemplatesMatching( TemplatesMatchingSettings settings )
 	{
 		this.settings = settings;
 		templateIndex = 0;
 		addNoiseLevel = 5; // TODO: 5 is very random...
+
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
 
@@ -82,6 +69,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return saveResults();
 	}
 
+	// TODO: refactor into separate class!
 	public boolean saveResults()
 	{
 		if ( settings.showIntermediateResults )
@@ -121,8 +109,23 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		for ( File templateFile : templateFiles )
 		{
-			matchTemplate( templateFile );
-			templateIndex++;
+			if ( settings.isHierarchicalMatching &&  templateFile.getName().contains( "hm" ) )
+				continue; // as this will be later matched in the hierarchy
+
+			final CalibratedRaiPlus< T > template = openTemplate( templateFile );
+
+			final TemplateMatcherTranslation2D templateMatcherTranslation2D
+					= new TemplateMatcherTranslation2D(
+							overviewForMatchingImagePlus.getProcessor(),
+							overviewProcessorPixelSizeNanometer );
+
+			templateMatcherTranslation2D.match( template );
+
+			if ( settings.showIntermediateResults )
+				showBestMatchOnOverview( template, position );
+
+
+			// open next template in hierarchy and then match against the one before.
 		}
 	}
 
@@ -138,7 +141,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		overviewForMatching = Views.subsample( overview, overviewSubSampling );
 
-		addNoiseLevel = 5;
 		createOverviewForMatchingImagePlus(
 				asFloatProcessor( overviewForMatching, addNoiseLevel ),
 				overviewSubSampling );
@@ -163,6 +165,11 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				overviewCalibrationNanometer * overviewSubSampling[ 1 ];
 
 		calibration.setUnit( "nanometer" );
+
+		overviewProcessorPixelSizeNanometer[ 0 ] = calibration.pixelWidth;
+		overviewProcessorPixelSizeNanometer[ 1 ] = calibration.pixelHeight;
+
+
 	}
 
 	private long[] getOverviewSubSampling()
@@ -181,32 +188,18 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		}
 	}
 
-	/**
-	 * Sometimes there are areas of uniform pixel intensities in the images.
-	 * This causes issues with the x-correlation normalisation.
-	 * Adding some noise seems to solve this issue, while
-	 * not harming the x-correlation.
-	 *
-	 * @param overview
-	 */
-	private void addNoiseToOverview( ImagePlus overview )
-	{
-		Utils.log( "Adding noise to overview..." );
-		//IJ.run( overview, "Add Specified Noise...", "standard=10");
-		IJ.run( overview, "Add Noise", "");
-	}
 
 	private void loadOverview()
 	{
 		Utils.log( "Loading overview image..." );
 
-		final CalibratedRAI< T > calibratedRAI =
+		final CalibratedRaiPlus< T > calibratedRaiPlus =
 				ImageIO.withBFopenRAI( settings.overviewImageFile );
 
 		// TODO: wrap into "PhysicalRai"
-		overviewCalibrationNanometer = calibratedRAI.nanometerCalibration[ 0 ];
-		overviewIs3D = calibratedRAI.is3D;
-		overviewIsMultiChannel = calibratedRAI.isMultiChannel;
+		overviewCalibrationNanometer = calibratedRaiPlus.nanometerCalibration[ 0 ];
+		overviewIs3D = calibratedRaiPlus.is3D;
+		overviewIsMultiChannel = calibratedRaiPlus.isMultiChannel;
 
 		if ( settings.confirmScalingViaUI )
 		{
@@ -218,7 +211,7 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 		setSubSampling();
 
-		overview = calibratedRAI.rai;
+		overview = calibratedRaiPlus.rai;
 	}
 
 	private void setSubSampling()
@@ -313,9 +306,9 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 					rai,
 					template.file.getName(),
 					path,
-					template.calibration,
+					template.pixelSizesNanometer,
 					template.calibrationUnit,
-					template.calibratedPosition );
+					template.matchedPositionNanometer );
 		}
 	}
 
@@ -369,94 +362,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 				translation );
 	}
 
-	private void matchTemplate( File templateFile )
-	{
-		final RandomAccessibleInterval< T > template = openTemplate( templateFile );
-
-		final RandomAccessibleInterval< T > subSampledTemplate =
-				Views.subsample( template, getTemplateSubSampling() );
-
-		RandomAccessibleInterval< T > projectedTemplate
-				= createProjectedTemplate( subSampledTemplate );
-
-		RandomAccessibleInterval< T > downscaledTemplate
-				= createDownscaledTemplate( projectedTemplate );
-
-		final double[] positionInSubSampledOverview = matchToOverview( downscaledTemplate );
-
-		final MatchedTemplate matchedTemplate =
-				getMatchedTemplate( templateFile, template, positionInSubSampledOverview );
-
-		matchedTemplates.add( matchedTemplate );
-	}
-
-	private MatchedTemplate getMatchedTemplate(
-			File templateFile,
-			RandomAccessibleInterval< T > template,
-			double[] positionInSubSampledOverview )
-	{
-		final double[] position = getCalibratedPosition( positionInSubSampledOverview );
-
-		// set z position to template center
-		final double[] center = getCenter( template );
-		position[ 2 ] = - center[ 2 ] * templateCalibrationNanometer[ 2 ];
-
-		final MatchedTemplate matchedTemplate = new MatchedTemplate();
-
-		if ( settings.allTemplatesFitInRAM )
-			matchedTemplate.rai = template;
-		else
-		{
-			template = null;
-			System.gc();
-		}
-
-		matchedTemplate.file = templateFile;
-		matchedTemplate.calibratedPosition = position;
-		matchedTemplate.calibration = templateCalibrationNanometer;
-		matchedTemplate.calibrationUnit = "nanometer";
-
-		return matchedTemplate;
-	}
-
-	private double[] getCalibratedPosition( double[] pixelPositionInSubSampledOverview )
-	{
-		final double[] calibratedPosition = new double[ 3 ];
-
-		for ( int d = 0; d < pixelPositionInSubSampledOverview.length; d++ )
-		{
-			calibratedPosition[ d ] = pixelPositionInSubSampledOverview[ d ]
-					* subSampling * overviewCalibrationNanometer;
-		}
-
-		return calibratedPosition;
-	}
-
-	class MatchedTemplate
-	{
-		RandomAccessibleInterval< T > rai;
-		File file;
-		double[] calibratedPosition;
-		double[] calibration;
-		String calibrationUnit;
-	}
-
-	private long[] getTemplateSubSampling()
-	{
-		return new long[]{ subSampling, subSampling, 1 };
-	}
-
-	private double[] matchToOverview( RandomAccessibleInterval< T > template )
-	{
-		Utils.log( "Finding best match in overview image..." );
-
-		final double[] position = computePositionWithinOverviewImage( template );
-
-		if ( settings.showIntermediateResults )
-			showBestMatchOnOverview( template, position );
-
-		return position;
-	}
 
 	private void showBestMatchOnOverview(
 			RandomAccessibleInterval< T > template,
@@ -492,155 +397,21 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 		return r;
 	}
 
-	private RandomAccessibleInterval< T >
-	createProjectedTemplate( RandomAccessibleInterval< T > template )
+	private CalibratedRaiPlus< T > openTemplate( File templateFile )
 	{
-		Utils.log( "Computing template average projection..." );
-
-		if ( template.numDimensions() == 3 )
-			return new Projection( template, 2 ).average();
-		else
-			return template;
-	}
-
-	/**
-	 * Downscales the template to matchToOverview resolution of overview image.
-	 * Note that both overview and template may been subsampled already.
-	 * However, as both have been subsampled with the same factor,
-	 * the relative downscaling factor here still is correct.
-	 * @param projected
-	 */
-	private RandomAccessibleInterval< T >
-	createDownscaledTemplate( RandomAccessibleInterval< T > projected )
-	{
-		Utils.log( "Scaling to overview image resolution..." );
-
-		scaling = getScaling( projected.numDimensions() );
-
-		RandomAccessibleInterval< T > downscaledTemplate
-				= Scalings.createRescaledArrayImg( projected, scaling );
-
-		showIntermediateResult( downscaledTemplate,
-				"" + templateIndex + " template" );
-
-		return downscaledTemplate;
-	}
-
-	private RandomAccessibleInterval< T > openTemplate( File templateFile )
-	{
-		final CalibratedRAI< T > calibratedRAI = ImageIO.withBFopenRAI( templateFile );
-
-		templateCalibrationNanometer = calibratedRAI.nanometerCalibration;
+		final CalibratedRaiPlus< T > calibratedRaiPlus = ImageIO.withBFopenRAI( templateFile );
 
 		if ( settings.confirmScalingViaUI && templateIndex == 0 )
 		{
-			templateCalibrationNanometer[ 0 ] =
+			calibratedRaiPlus.nanometerCalibration[ 0 ] =
 					confirmImageScalingUI(
 							templateCalibrationNanometer[ 0 ],
 						"Template");
 		}
 
-		return calibratedRAI.rai;
-	}
-
-	private double[] computePositionWithinOverviewImage(
-			RandomAccessibleInterval< T > template )
-	{
-		final ImageProcessor templateProcessor =
-				Utils.asFloatProcessor( template );
-
-		Utils.log( "X-correlation..." );
-
-		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
-				overviewForMatchingImagePlus.getProcessor(),
-				templateProcessor,
-				NORMALIZED_CORRELATION );
-
-		if ( settings.showIntermediateResults )
-			new ImagePlus( ""+ templateIndex +" correlation",
-					correlation ).show();
-
-		Utils.log( "Find maximum in x-correlation..." );
-
-		final int[] position = findMaximumPosition( correlation );
-
-		Utils.log( "Refine maximum to sub-pixel resolution..." );
-
-		final double[] refinedPosition = computeRefinedPosition( correlation, position );
-
-		return refinedPosition;
-	}
-
-	private double[] computeRefinedPosition( FloatProcessor correlation, int[] position )
-	{
-		final RandomAccessibleInterval< T > correlationRai
-				= ImageJFunctions.wrapReal( new ImagePlus( "", correlation ) );
-
-		final int numDimensions = correlationRai.numDimensions();
-
-		final SubpixelLocalization< Point, T > spl =
-				new SubpixelLocalization< >( numDimensions );
-		spl.setNumThreads( 1 );
-		spl.setReturnInvalidPeaks( true );
-		spl.setCanMoveOutside( true );
-		spl.setAllowMaximaTolerance( true );
-		spl.setMaxNumMoves( 10 );
-
-		ArrayList peaks = new ArrayList< Point >(  );
-		peaks.add( new Point( position[ 0 ], position[ 1 ] ) );
-
-		final ArrayList< RefinedPeak< Point > > refined = spl.process(
-				peaks,
-				correlationRai,
-				correlationRai );
-
-		final RefinedPeak< Point > refinedPeak = refined.get( 0 );
-
-		final double[] refinedPosition = new double[ numDimensions ];
-		for ( int d = 0; d < numDimensions; d++ )
-			refinedPosition[ d ] = refinedPeak.getDoublePosition( d );
-
-		return refinedPosition;
-	}
-
-	private int[] findMaximumPosition( FloatProcessor processor )
-	{
-		final int[] maxPos = findMax( processor );
-		return maxPos;
+		return calibratedRaiPlus;
 	}
 
 
-	public static int[] findMax( ImageProcessor ip ) {
-		int[] coord = new int[2];
-		float max = ip.getPixel(0, 0);
-		final int sWh = ip.getHeight();
-		final int sWw = ip.getWidth();
-
-		for (int j = 0; j < sWh; j++) {
-			for (int i = 0; i < sWw; i++) {
-				if (ip.getPixel(i, j) > max) {
-					max = ip.getPixel(i, j);
-					coord[0] = i;
-					coord[1] = j;
-				}
-			}
-		}
-
-		return (coord);
-	}
-
-	private double[] getScaling( int numDimensions )
-	{
-		final double scalingRatio =
-				templateCalibrationNanometer[ 0 ] / overviewCalibrationNanometer;
-		final double[] scaling = new double[ numDimensions ];
-		Arrays.fill( scaling, scalingRatio );
-
-		Utils.log( "Template pixel size [nm]: " + templateCalibrationNanometer[ 0 ] );
-		Utils.log( "Overview pixel size [nm]: " + overviewCalibrationNanometer );
-
-		Utils.log( "Scaling factor: " +  scalingRatio );
-		return scaling;
-	}
 
 }

@@ -2,7 +2,7 @@ package de.embl.cba.templatematching.match;
 
 import java.io.File;
 
-public class TemplateMatchingSettings
+public class TemplatesMatchingSettings
 {
 	public File templatesInputDirectory;
 	public File outputDirectory;
@@ -11,7 +11,6 @@ public class TemplateMatchingSettings
 	public boolean showIntermediateResults = false;
 	public boolean confirmScalingViaUI;
 	public double matchingPixelSpacingNanometer;
-	public boolean allTemplatesFitInRAM;
 	public String templatesRegExp = ".*_hm.rec";
 	public boolean isHierarchicalMatching;
 }

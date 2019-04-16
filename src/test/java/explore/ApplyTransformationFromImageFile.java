@@ -5,16 +5,14 @@ import bdv.util.BdvFunctions;
 import bdv.util.BdvOptions;
 import bdv.util.BdvStackSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.embl.cba.templatematching.CalibratedRAI;
+import de.embl.cba.templatematching.image.CalibratedRaiPlus;
 import de.embl.cba.templatematching.ImageIO;
-import jdk.nashorn.internal.parser.JSONParser;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -45,10 +43,10 @@ public class ApplyTransformationFromImageFile
 		transform3D.set( 1, 2, 2 );
 
 
-		final CalibratedRAI< T > fluorescence = ImageIO.withBFopenRAI(
+		final CalibratedRaiPlus< T > fluorescence = ImageIO.withBFopenRAI(
 				new File( "/Volumes/cba/exchange/Giulia/TomoMatching3/A120g4-a1.tif (RGB).tif" ) );
 
-		final CalibratedRAI< T > em = ImageIO.withBFopenRAI(
+		final CalibratedRaiPlus< T > em = ImageIO.withBFopenRAI(
 				new File( "/Volumes/cba/exchange/Giulia/TomoMatching3/polyA1_merged_s0.mrc" ) );
 
 		final BdvStackSource< T > emSource = BdvFunctions.show( em.rai, "em",

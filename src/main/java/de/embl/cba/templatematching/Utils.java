@@ -551,6 +551,16 @@ public class Utils
 		return doubles;
 	}
 
+	public static double[] asDoubles( long[] longs )
+	{
+		double[] doubles = new double[ longs.length ];
+
+		for ( int i = 0; i < longs.length; ++i )
+			doubles[ i ] = ( double ) longs[ i ];
+
+		return doubles;
+	}
+
 	public static boolean intersecting( RealInterval requestedInterval, RealInterval imageInterval )
 	{
 		FinalRealInterval intersect = Intervals.intersect( requestedInterval, imageInterval );

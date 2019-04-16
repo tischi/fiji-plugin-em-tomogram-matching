@@ -1,4 +1,4 @@
-import de.embl.cba.templatematching.ui.MatchedTemplateBrowserCommand;
+import de.embl.cba.templatematching.ui.TemplatesBrowserCommand;
 import net.imagej.ImageJ;
 
 public class RunMatchedTemplatesBrowserCommand
@@ -10,7 +10,7 @@ public class RunMatchedTemplatesBrowserCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( MatchedTemplateBrowserCommand.class, true );
+		ij.command().run( TemplatesBrowserCommand.class, true );
 	}
 
 }

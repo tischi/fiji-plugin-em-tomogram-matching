@@ -1,4 +1,4 @@
-import de.embl.cba.templatematching.ui.MultiTemplateMatchingCommand;
+import de.embl.cba.templatematching.ui.TemplatesMatchingCommand;
 import net.imagej.ImageJ;
 
 public class RunMultiTemplateMatchingCommand
@@ -10,7 +10,7 @@ public class RunMultiTemplateMatchingCommand
 		ij.ui().showUI();
 
 		// invoke the plugin
-		ij.command().run( MultiTemplateMatchingCommand.class, true );
+		ij.command().run( TemplatesMatchingCommand.class, true );
 	}
 
 }

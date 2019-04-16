@@ -23,14 +23,14 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 {
 	public static final ARGBType OVERVIEW_EM_COLOR =
 			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
-	private final MatchedTemplatesBrowsingSettings settings;
+	private final TemplatesBrowsingSettings settings;
 	private ArrayList< File > inputFiles = new ArrayList<>();
 	private Bdv bdv;
 	private ArrayList< ImageSource > imageSources;
 	private double displayRangeFactorMin = 0.9;
 	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
 
-	public MatchedTemplatesBrowser( MatchedTemplatesBrowsingSettings settings )
+	public MatchedTemplatesBrowser( TemplatesBrowsingSettings settings )
 	{
 		this.settings = settings;
 		this.imageSources = new ArrayList<>( );

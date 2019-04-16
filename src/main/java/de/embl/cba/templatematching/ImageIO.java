@@ -1,5 +1,6 @@
 package de.embl.cba.templatematching;
 
+import de.embl.cba.templatematching.image.CalibratedRaiPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.measure.Calibration;
@@ -170,14 +171,14 @@ public class ImageIO
 	}
 
 	public static  < T extends RealType< T > & NativeType< T > >
-	CalibratedRAI< T > withBFopenRAI( File file )
+	CalibratedRaiPlus< T > withBFopenRAI( File file )
 	{
 		Utils.log( "Loading " + file.getName() + "...");
 
 		ImagePlus imp = withBFopenImp( file );
 
-		final CalibratedRAI< T > calibratedRAI = new CalibratedRAI<>( imp );
+		final CalibratedRaiPlus< T > calibratedRaiPlus = new CalibratedRaiPlus<>( imp );
 
-		return calibratedRAI;
+		return calibratedRaiPlus;
 	}
 }

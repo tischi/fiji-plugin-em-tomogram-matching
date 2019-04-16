@@ -1,19 +1,24 @@
-package de.embl.cba.templatematching;
+package de.embl.cba.templatematching.image;
 
+import de.embl.cba.templatematching.Utils;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.numeric.RealType;
 
-public class CalibratedRAI< T extends RealType< T > >
+public class CalibratedRaiPlus< T extends RealType< T > > implements CalibratedRai
 {
 	public RandomAccessibleInterval< T > rai;
 	public double[] nanometerCalibration;
 	public boolean is3D = false;
 	public boolean isMultiChannel = false;
+	public String name;
 
-	public CalibratedRAI( ImagePlus imp )
+	public CalibratedRaiPlus( ImagePlus imp )
 	{
+		super();
+
+
 		rai = ImageJFunctions.wrapReal( imp );
 
 		final String unit = imp.getCalibration().getUnit();
@@ -30,5 +35,19 @@ public class CalibratedRAI< T extends RealType< T > >
 		if ( imp.getNChannels() > 1 ) isMultiChannel = true;
 		if ( imp.getNSlices() > 1 ) is3D = true;
 
+		name = imp.getTitle();
+
+	}
+
+	@Override
+	public RandomAccessibleInterval< ? extends RealType< ? > > rai()
+	{
+		return rai;
+	}
+
+	@Override
+	public double[] nanometerCalibration()
+	{
+		return nanometerCalibration;
 	}
 }

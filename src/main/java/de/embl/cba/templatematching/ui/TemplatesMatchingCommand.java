@@ -1,28 +1,22 @@
 package de.embl.cba.templatematching.ui;
 
 import de.embl.cba.templatematching.browse.MatchedTemplatesBrowser;
-import de.embl.cba.templatematching.browse.MatchedTemplatesBrowsingSettings;
-import de.embl.cba.templatematching.match.TemplateMatching;
-import de.embl.cba.templatematching.match.TemplateMatchingSettings;
+import de.embl.cba.templatematching.browse.TemplatesBrowsingSettings;
+import de.embl.cba.templatematching.match.TemplatesMatching;
+import de.embl.cba.templatematching.match.TemplatesMatchingSettings;
 import ij.IJ;
-import ij.ImagePlus;
-import net.imagej.DatasetService;
-import net.imagej.ops.OpService;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import org.scijava.app.StatusService;
 import org.scijava.command.Command;
-import org.scijava.log.LogService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-import org.scijava.ui.UIService;
 
 import java.io.File;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>Multi Template Matching" )
-public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T > > implements Command
+public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
-	TemplateMatchingSettings settings = new TemplateMatchingSettings();
+	TemplatesMatchingSettings settings = new TemplatesMatchingSettings();
 
 	@Parameter ( label = "Overview Image" )
 	public File overviewImage = settings.overviewImageFile;
@@ -56,12 +50,12 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 	{
 		setSettings();
 
-		final TemplateMatching matching = new TemplateMatching( settings );
+		final TemplatesMatching matching = new TemplatesMatching( settings );
 
 		if ( matching.run() )
 		{
-			MatchedTemplatesBrowsingSettings browsingSettings
-					= new MatchedTemplatesBrowsingSettings();
+			TemplatesBrowsingSettings browsingSettings
+					= new TemplatesBrowsingSettings();
 			browsingSettings.inputDirectory = settings.outputDirectory;
 			new MatchedTemplatesBrowser( browsingSettings ).run();
 		}
@@ -72,7 +66,6 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 
 	}
 
-
 	public void setSettings()
 	{
 		settings.outputDirectory = outputDirectory;
@@ -82,7 +75,6 @@ public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T 
 		settings.showIntermediateResults = ! runSilent;
 		settings.confirmScalingViaUI = false;
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
-		settings.allTemplatesFitInRAM = allTemplatesFitInRAM;
 		settings.templatesRegExp = templatesRegExp;
 		settings.isHierarchicalMatching = isHierarchicalMatching;
 	}
