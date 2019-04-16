@@ -11,7 +11,7 @@ public class FileUtils
 	public static ArrayList< File > getFileList( File directory, String fileNameRegExp )
 	{
 		final ArrayList< File > files = new ArrayList<>();
-		populateFileList( directory, fileNameRegExp,files );
+		populateFileList( directory, fileNameRegExp, files );
 		return files;
 	}
 

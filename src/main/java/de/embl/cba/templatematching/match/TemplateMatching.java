@@ -71,6 +71,8 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 
 	public boolean run()
 	{
+		createTemplateFileList();
+
 		openOverview();
 
 		matchTemplates();
@@ -114,8 +116,6 @@ public class TemplateMatching < T extends RealType< T > & NativeType< T > >
 	{
 		matchingOverlay = new Overlay();
 		matchedTemplates = new ArrayList< >();
-
-		createTemplateFileList();
 
 		for ( File templateFile : templateFiles )
 		{

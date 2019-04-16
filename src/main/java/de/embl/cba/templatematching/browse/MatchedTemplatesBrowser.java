@@ -17,18 +17,18 @@ import net.imglib2.view.Views;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > >
 {
 	public static final ARGBType OVERVIEW_EM_COLOR =
 			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
 	private final MatchedTemplatesBrowsingSettings settings;
-	private ArrayList< File > inputFiles;
+	private ArrayList< File > inputFiles = new ArrayList<>();
 	private Bdv bdv;
 	private ArrayList< ImageSource > imageSources;
 	private double displayRangeFactorMin = 0.9;
 	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
-
 
 	public MatchedTemplatesBrowser( MatchedTemplatesBrowsingSettings settings )
 	{
@@ -38,7 +38,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 
 	public void run()
 	{
-		fetchImageSources();
+		fetchImageSources( settings.inputDirectory.getAbsolutePath(), inputFiles );
 		showImageSources();
 		centerZatZero();
 		showUI();
@@ -158,19 +158,23 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 		}
 	}
 
-	private void fetchImageSources()
+	public void fetchImageSources( String directoryName, List<File> files)
 	{
-		File[] files = settings.inputDirectory.listFiles();
+		File directory = new File( directoryName );
 
-		inputFiles = new ArrayList<>();
-
-		for ( File file : files )
-		{
-			if ( isValid( file ) )
+		File[] fList = directory.listFiles();
+		if ( fList != null )
+			for ( File file : fList )
 			{
-				inputFiles.add( file );
+				if ( file.isFile() )
+				{
+					if ( isValid( file ) )
+						files.add( file );
+					else if ( file.isDirectory() )
+						fetchImageSources( file.getAbsolutePath(), files );
+				}
+
 			}
-		}
 	}
 
 	private boolean isValid( File file )

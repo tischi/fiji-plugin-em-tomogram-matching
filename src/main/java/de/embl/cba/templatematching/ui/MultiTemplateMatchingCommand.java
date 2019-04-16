@@ -22,24 +22,6 @@ import java.io.File;
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>Multi Template Matching" )
 public class MultiTemplateMatchingCommand<T extends RealType<T> & NativeType< T > > implements Command
 {
-	@Parameter
-	public UIService uiService;
-
-	@Parameter
-	public DatasetService datasetService;
-
-	@Parameter
-	public LogService logService;
-
-	@Parameter
-	public OpService opService;
-
-	@Parameter
-	public StatusService statusService;
-
-	@Parameter( required = false )
-	public ImagePlus imagePlus;
-
 	TemplateMatchingSettings settings = new TemplateMatchingSettings();
 
 	@Parameter ( label = "Overview Image" )
