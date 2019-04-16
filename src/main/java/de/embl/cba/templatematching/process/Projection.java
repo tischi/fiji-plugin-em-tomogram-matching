@@ -1,4 +1,4 @@
-package de.embl.cba.templatematching.imageprocessing;
+package de.embl.cba.templatematching.process;
 
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;

@@ -4,12 +4,14 @@ import de.embl.cba.templatematching.Utils;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;
+import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 
-public class CalibratedRaiPlus< T extends RealType< T > > implements CalibratedRai
+public class CalibratedRaiPlus< T extends RealType< T > & NativeType< T > >
+		implements CalibratedRai< T >
 {
-	public RandomAccessibleInterval< T > rai;
-	public double[] nanometerCalibration;
+	private RandomAccessibleInterval< T > rai;
+	private double[] nanometerCalibration;
 	public boolean is3D = false;
 	public boolean isMultiChannel = false;
 	public String name;
@@ -40,7 +42,7 @@ public class CalibratedRaiPlus< T extends RealType< T > > implements CalibratedR
 	}
 
 	@Override
-	public RandomAccessibleInterval< ? extends RealType< ? > > rai()
+	public RandomAccessibleInterval< T > rai()
 	{
 		return rai;
 	}

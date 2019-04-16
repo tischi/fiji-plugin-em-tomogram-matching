@@ -16,7 +16,7 @@ import net.imglib2.type.numeric.RealType;
 import java.util.ArrayList;
 
 import static de.embl.cba.templatematching.Utils.showIntermediateResults;
-import static de.embl.cba.templatematching.process.ImageProcessor.*;
+import static de.embl.cba.templatematching.process.Processor.*;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType< T > >
