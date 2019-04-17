@@ -10,8 +10,6 @@ import de.embl.cba.templatematching.image.DefaultCalibratedRai;
 import de.embl.cba.templatematching.process.Processor;
 import ij.ImagePlus;
 import ij.gui.*;
-import ij.measure.Calibration;
-import ij.process.FloatProcessor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -21,7 +19,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
-import static de.embl.cba.templatematching.Utils.asFloatProcessor;
+import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 
 public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 {
@@ -29,17 +27,21 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private final TemplatesMatchingSettings settings;
 	private ArrayList< File > templateFiles;
 	private Overlay matchingOverlay;
-	private ImagePlus overviewImagePlus;
 	private int templateIndex;
 	private ArrayList< MatchedTemplate > matchedTemplates;
-	private int addNoiseLevel;
 	private CalibratedRaiPlus< T > overviewRaiPlus;
+	private String highMagId;
+	private String lowMagId;
 
 	public TemplatesMatching( TemplatesMatchingSettings settings )
 	{
 		this.settings = settings;
 		templateIndex = 0;
 		addNoiseLevel = 5; // TODO: 5 is very random...
+
+		highMagId = "hm.rec";
+		lowMagId = "lm.rec";
+
 
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
@@ -95,25 +97,59 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 		matchingOverlay = new Overlay();
 		matchedTemplates = new ArrayList<>();
 
+		TemplateMatcherTranslation2D templateToOverviewMatcher
+				= new TemplateMatcherTranslation2D( overviewRaiPlus );
+
+		if ( settings.showIntermediateResults )
+		{
+			final ImagePlus overviewImagePlus = templateToOverviewMatcher.getOverviewImagePlus();
+			overviewImagePlus.show();
+		}
+
 		for ( File templateFile : templateFiles )
 		{
-			if ( settings.isHierarchicalMatching && templateFile.getName().contains( "hm" ) )
+			if ( settings.isHierarchicalMatching && templateFile.getName().contains( highMagId ) )
 				continue; // as this will be later matched in the hierarchy
 
-			final CalibratedRaiPlus< T > template = openImage( templateFile );
+			CalibratedRaiPlus< T > template = openImage( templateFile );
 
-			final TemplateMatcherTranslation2D templateMatcherTranslation2D
-					= new TemplateMatcherTranslation2D( overviewImagePlus );
-
-			final MatchedTemplate matchedTemplate = templateMatcherTranslation2D.match( template );
+			final MatchedTemplate matchedTemplate = templateToOverviewMatcher.match( template );
 
 			matchedTemplate.file = templateFile;
 
 			if ( settings.showIntermediateResults )
-				showBestMatchOnOverview( matchedTemplate );
+				showBestMatchOnOverview( matchedTemplate, overviewImagePlus );
 
 			// TODO: maybe let the user confirm?!
 			exportTemplate( matchedTemplate );
+
+
+			if ( settings.isHierarchicalMatching && templateFile.getName().contains( lowMagId ) )
+			{
+//				final File highMagFile =
+//						new File( templateFile.getAbsolutePath().replace( lowMagId, highMagId )_;
+//
+//				template = openImage( highMagFile );
+//
+//				templateToOverviewMatcher =
+//						new TemplateMatcherTranslation2D( matchedTemplate.calibratedRai, addNoiseLevel );
+//
+//				final MatchedTemplate matchedTemplate = templateToOverviewMatcher.match( template );
+//
+//				matchedTemplate.file = templateFile;
+//
+//				if ( settings.showIntermediateResults )
+//					showBestMatchOnOverview( matchedTemplate );
+//
+//				// TODO: maybe let the user confirm?!
+//				exportTemplate( matchedTemplate );
+
+			}
+				//continue; // as this will be later matched in the hierarchy
+
+
+
+			//matchedTemplate = null; // memory....
 
 			// open next template in hierarchy and then match against the one before.
 		}
@@ -131,36 +167,14 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		final long[] overviewSubSampling = getOverviewSubSamplingXY();
 
-		Utils.log( "Sub-sampling overview image by: " + overviewSubSampling[ 0 ] );
+		Utils.log( "Sub-sampling overview image by a factor of " + overviewSubSampling[ 0 ] );
 		final CalibratedRai< T > subSampled =
 				Processor.subSample( rotated, overviewSubSampling );
 
-		// TODO: one should also downsample to get to the actually requested calibration pixel size!
-
-		createOverviewForMatching(
-				asFloatProcessor( subSampled.rai(), addNoiseLevel ),
-				overviewSubSampling );
-
-		if ( settings.showIntermediateResults )
-			overviewImagePlus.show();
+		showIntermediateResult( subSampled, "overview");
 
 	}
 
-	private void createOverviewForMatching(
-			FloatProcessor overviewProcessor,
-			long[] overviewSubSampling )
-	{
-		overviewImagePlus = new ImagePlus(
-				"Overview for matching", overviewProcessor );
-
-		final Calibration calibration = overviewImagePlus.getCalibration();
-		calibration.pixelWidth =
-				overviewRaiPlus.nanometerCalibration()[ 0 ] * overviewSubSampling[ 0 ];
-		calibration.pixelHeight =
-				overviewRaiPlus.nanometerCalibration()[ 1 ] * overviewSubSampling[ 1 ];
-		calibration.setUnit( "nanometer" );
-
-	}
 
 	private long[] getOverviewSubSamplingXY()
 	{
@@ -182,7 +196,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 	private void loadOverview()
 	{
-		Utils.log( "Loading overview image..." );
+		Utils.log( "Loading overview image: " + settings.overviewImageFile );
 
 		overviewRaiPlus = ImageIO.withBFopenRAI( settings.overviewImageFile );
 	}
@@ -282,7 +296,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 
 	private void showBestMatchOnOverview(
-			MatchedTemplate matchedTemplate )
+			MatchedTemplate matchedTemplate, ImagePlus overviewImagePlus )
 	{
 		final double[] position = matchedTemplate.matchedPositionNanometer;
 		final double[] size = matchedTemplate.getImageSizeNanometer();

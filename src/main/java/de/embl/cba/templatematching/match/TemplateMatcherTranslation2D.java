@@ -3,6 +3,7 @@ package de.embl.cba.templatematching.match;
 import de.embl.cba.templatematching.image.CalibratedRai;
 import de.embl.cba.templatematching.Utils;
 import ij.ImagePlus;
+import ij.measure.Calibration;
 import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import net.imglib2.Point;
@@ -15,8 +16,7 @@ import net.imglib2.type.numeric.RealType;
 
 import java.util.ArrayList;
 
-import static de.embl.cba.templatematching.Utils.showIntermediateResult;
-import static de.embl.cba.templatematching.Utils.showIntermediateResults;
+import static de.embl.cba.templatematching.Utils.*;
 import static de.embl.cba.templatematching.process.Processor.*;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
@@ -26,15 +26,19 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 	public static final int CORRELATION = 4;
 	public static final int NORMALIZED_CORRELATION = 5;
 
-	private final ImageProcessor overview;
-	private final double[] overviewPixelSizeNanometer;
+	private final CalibratedRai< T > overviewCalibratedRai;
+	private ImagePlus overviewImagePlus;
 
-	public TemplateMatcherTranslation2D( ImagePlus overview )
+	public TemplateMatcherTranslation2D( CalibratedRai< T > overviewCalibratedRai )
 	{
-		this.overview = overview.getProcessor();
-		this.overviewPixelSizeNanometer = new double[]{
-				overview.getCalibration().pixelWidth,
-				overview.getCalibration().pixelHeight};
+		this.overviewCalibratedRai = overviewCalibratedRai;
+		int addNoiseLevel = 5;
+		setOverviewImagePlus( overviewCalibratedRai, addNoiseLevel );
+	}
+
+	public ImagePlus getOverviewImagePlus()
+	{
+		return overviewImagePlus;
 	}
 
 	public MatchedTemplate match( CalibratedRai< T > template )
@@ -54,6 +58,22 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 		return matched;
 	}
+
+
+	private void setOverviewImagePlus( CalibratedRai< T > calibratedRai, int addNoiseLevel )
+	{
+		asFloatProcessor( calibratedRai.rai(), addNoiseLevel );
+
+		overviewImagePlus = new ImagePlus(
+				"Overview",
+				asFloatProcessor( calibratedRai.rai(), addNoiseLevel ) );
+
+		final Calibration calibration = overviewImagePlus.getCalibration();
+		calibration.pixelWidth = calibratedRai.nanometerCalibration()[ 0 ];
+		calibration.pixelHeight = calibratedRai.nanometerCalibration()[ 1 ];
+		calibration.setUnit( "nanometer" );
+	}
+
 
 	private MatchedTemplate getMatchedTemplate(
 			CalibratedRai< T > template,
@@ -75,7 +95,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		final double[] calibratedPosition = new double[ 3 ];
 
 		for ( int d = 0; d < pixelPosition.length; d++ )
-			calibratedPosition[ d ] = pixelPosition[ d ] * overviewPixelSizeNanometer[ d ];
+			calibratedPosition[ d ] = pixelPosition[ d ] * overviewCalibratedRai.nanometerCalibration()[ d ];
 
 		return calibratedPosition;
 	}
@@ -88,7 +108,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		final long[] subSampling = new long[ numDimensions ];
 
 		for ( int d = 0; d < 2; d++ )
-			subSampling[ d ] = (long) ( overviewPixelSizeNanometer[ d ]
+			subSampling[ d ] = (long) ( overviewCalibratedRai.nanometerCalibration()[ d ]
 					/ template.nanometerCalibration()[ d ] );
 
 		if ( numDimensions == 3 )
@@ -103,20 +123,18 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		final double[] calibration = calibratedRai.nanometerCalibration();
 
 		for ( int d = 0; d < 2; d++ )
-			scalings[ d ] = calibration[ d ] / overviewPixelSizeNanometer[ d ];
+			scalings[ d ] = calibration[ d ] / overviewCalibratedRai.nanometerCalibration()[ d ];
 
 		return scalings;
 	}
 
 	private double[] findPositionWithinOverviewImage( RandomAccessibleInterval< T > template )
 	{
-		final ImageProcessor templateProcessor = Utils.asFloatProcessor( template );
-
 		Utils.log( "X-correlation..." );
 
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
-				overview,
-				templateProcessor,
+				overviewImagePlus.getProcessor(),
+				asFloatProcessor( template ),
 				NORMALIZED_CORRELATION );
 
 		if ( showIntermediateResults )

@@ -173,8 +173,6 @@ public class ImageIO
 	public static  < T extends RealType< T > & NativeType< T > >
 	CalibratedRaiPlus< T > withBFopenRAI( File file )
 	{
-		Utils.log( "Loading " + file.getName() + "...");
-
 		ImagePlus imp = withBFopenImp( file );
 
 		final CalibratedRaiPlus< T > calibratedRaiPlus = new CalibratedRaiPlus<>( imp );
