@@ -94,10 +94,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			return false;
 		}
 		else
-		{
 			return true;
-		}
-
 
 	}
 
@@ -119,11 +116,11 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 			matchedTemplate.file = templateFile;
 
-			if ( settings.showIntermediateResults )
+			if ( settings.showMatching )
 				showBestMatchOnOverview( matchedTemplate,
 						templateToOverviewMatcher.getOverviewImagePlus() );
 
-			// exportTemplate( matchedTemplate );
+			exportTemplate( matchedTemplate );
 
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( lowMagId ) )
 			{
@@ -138,22 +135,23 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 				final MatchedTemplate matchedHighResTemplate
 						= highResToLowResMatcher.match( highMagTemplate );
 
-				matchedHighResTemplate.file = templateFile;
+				matchedHighResTemplate.file = highMagFile;
 
-				if ( settings.showIntermediateResults )
+				// Show match on lower resolution template
+//				if ( settings.showIntermediateResults )
+//					showBestMatchOnOverview( matchedHighResTemplate,
+//							highResToLowResMatcher.getOverviewImagePlus() );
+
+				for ( int d = 0; d < 2; d++ )
+					matchedHighResTemplate.matchedPositionNanometer[ d ] += matchedTemplate.matchedPositionNanometer[ d ];
+
+				if ( settings.showMatching )
 					showBestMatchOnOverview( matchedHighResTemplate,
-							highResToLowResMatcher.getOverviewImagePlus() );
+							templateToOverviewMatcher.getOverviewImagePlus() );
 
-				// exportTemplate( matchedHighResTemplate );
+				exportTemplate( matchedHighResTemplate );
 
 			}
-				//continue; // as this will be later matched in the hierarchy
-
-
-
-			//matchedTemplate = null; // memory....
-
-			// open next template in hierarchy and then match against the one before.
 		}
 	}
 
@@ -298,9 +296,6 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private void showBestMatchOnOverview(
 			MatchedTemplate matchedTemplate, ImagePlus overviewImagePlus )
 	{
-
-		Overlay matchingOverlay;
-
 		final double[] position = matchedTemplate.matchedPositionNanometer;
 		final double[] size = matchedTemplate.getImageSizeNanometer();
 
@@ -317,8 +312,8 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		overviewImagePlus.getOverlay().add( getRectangleRoi( pixelPosition, templateSizePixel ) );
 		overviewImagePlus.getOverlay().add( getTextRoi( templateSizePixel ) );
-
 		overviewImagePlus.show();
+		overviewImagePlus.updateAndDraw();
 	}
 
 	private Roi getRectangleRoi( int[] position, int[] size )
