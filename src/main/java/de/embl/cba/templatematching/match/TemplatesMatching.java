@@ -37,8 +37,6 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	{
 		this.settings = settings;
 		templateIndex = 0;
-		addNoiseLevel = 5; // TODO: 5 is very random...
-
 		highMagId = "hm.rec";
 		lowMagId = "lm.rec";
 
@@ -49,6 +47,12 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	public boolean run()
 	{
 		createTemplateFileList();
+
+		if ( templateFiles.size() == 0 )
+		{
+			Utils.error( "No tomograms found!" );
+			return false;
+		}
 
 		openOverview();
 
@@ -101,10 +105,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 				= new TemplateMatcherTranslation2D( overviewRaiPlus );
 
 		if ( settings.showIntermediateResults )
-		{
-			final ImagePlus overviewImagePlus = templateToOverviewMatcher.getOverviewImagePlus();
-			overviewImagePlus.show();
-		}
+			templateToOverviewMatcher.getOverviewImagePlus().show();
 
 		for ( File templateFile : templateFiles )
 		{
@@ -118,11 +119,10 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			matchedTemplate.file = templateFile;
 
 			if ( settings.showIntermediateResults )
-				showBestMatchOnOverview( matchedTemplate, overviewImagePlus );
+				showBestMatchOnOverview( matchedTemplate, templateToOverviewMatcher.getOverviewImagePlus() );
 
 			// TODO: maybe let the user confirm?!
 			exportTemplate( matchedTemplate );
-
 
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( lowMagId ) )
 			{

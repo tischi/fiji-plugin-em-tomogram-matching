@@ -29,11 +29,12 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	JFrame frame;
 	JComboBox tomogramComboBox;
 	private final Bdv bdv;
-	private VoxelDimensions tomogramVoxelDimensions;
+	private ArrayList< VoxelDimensions > matchedTemplateVoxelDimensions;
 
 	public MatchedTemplatesBrowserUI( Bdv bdv )
 	{
 		this.bdv = bdv;
+		matchedTemplateVoxelDimensions = new ArrayList<>(  );
 	}
 
 	public void showUI()
@@ -76,18 +77,18 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 			}
 			else if ( name.contains( "hm" ) )
 			{
-				tomogramVoxelDimensions = BdvUtils.getVoxelDimensions( bdv, sourceIndex );
+				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
 				highMagTomogramSourceIndices.add( sourceIndex );
 				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
 				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ]  );
 			}
 			else if ( name.contains( "lm" ) )
 			{
+				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
 				lowMagTomogramSourceIndices.add( sourceIndex );
 				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
 				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ] * 2  );
 			}
-
 
 		}
 
@@ -161,7 +162,7 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 		horizontalLayoutPanel.add( new JLabel( "Resolution [nm]" ) );
 
-		final JTextField resolutionTextField = new JTextField( "" + tomogramVoxelDimensions.dimension( 0 ) );
+		final JTextField resolutionTextField = new JTextField( "" + getMinVoxelSize() );
 
 		horizontalLayoutPanel.add( resolutionTextField );
 
@@ -172,6 +173,17 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		horizontalLayoutPanel.add( button );
 
 		panel.add( horizontalLayoutPanel );
+	}
+
+	private double getMinVoxelSize()
+	{
+		double minVoxelSize = 100;
+		for ( VoxelDimensions voxelDimensions : matchedTemplateVoxelDimensions )
+		{
+			if ( voxelDimensions.dimension( 0 ) < minVoxelSize )
+				minVoxelSize = voxelDimensions.dimension( 0 );
+		}
+		return minVoxelSize;
 	}
 
 	private void addSourceZoomPanel( JPanel panel )

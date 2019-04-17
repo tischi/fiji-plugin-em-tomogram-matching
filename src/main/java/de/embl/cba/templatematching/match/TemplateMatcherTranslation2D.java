@@ -50,7 +50,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 		CalibratedRai< T > downscaled = scale( projected, getScalingsXY( projected ) );
 
-		showIntermediateResult( downscaled, "downscaled" );
+		showIntermediateResult( downscaled, "processed template" );
 
 		final double[] calibratedPosition = findPositionWithinOverviewImage( downscaled.rai() );
 
