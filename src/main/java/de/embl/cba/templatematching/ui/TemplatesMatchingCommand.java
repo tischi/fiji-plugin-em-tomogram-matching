@@ -46,6 +46,9 @@ public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > 
 	@Parameter ( label = "Run Silent" )
 	boolean runSilent = false;
 
+	@Parameter ( label = "Save Results in BigDataViewer Format" )
+	boolean saveResultsAsBdv = settings.saveResultsAsBdv;
+
 	public void run()
 	{
 		setSettings();
@@ -57,7 +60,9 @@ public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > 
 			TemplatesBrowsingSettings browsingSettings
 					= new TemplatesBrowsingSettings();
 			browsingSettings.inputDirectory = settings.outputDirectory;
-			new MatchedTemplatesBrowser( browsingSettings ).run();
+
+			if ( saveResultsAsBdv )
+				new MatchedTemplatesBrowser( browsingSettings ).run();
 		}
 		else
 		{
@@ -77,6 +82,7 @@ public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > 
 		settings.matchingPixelSpacingNanometer = pixelSpacingDuringMatching;
 		settings.templatesRegExp = templatesRegExp;
 		settings.isHierarchicalMatching = isHierarchicalMatching;
+		settings.saveResultsAsBdv = saveResultsAsBdv;
 	}
 
 

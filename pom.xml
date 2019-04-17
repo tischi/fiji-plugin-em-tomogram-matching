@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>fiji-plugin-multiTemplateMatching</artifactId>
-	<version>0.2.08</version>
+	<version>0.3.00</version>
 	<url>https://github.com/tischi/fiji-plugin-em-tomogram-matching/issues</url>
 
 	<name>Fiji Plugin Multi Template Matching</name>

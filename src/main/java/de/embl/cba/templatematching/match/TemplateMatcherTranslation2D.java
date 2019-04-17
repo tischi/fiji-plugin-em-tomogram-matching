@@ -5,7 +5,6 @@ import de.embl.cba.templatematching.Utils;
 import ij.ImagePlus;
 import ij.measure.Calibration;
 import ij.process.FloatProcessor;
-import ij.process.ImageProcessor;
 import net.imglib2.Point;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.algorithm.localextrema.RefinedPeak;
@@ -28,6 +27,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 	private final CalibratedRai< T > overviewCalibratedRai;
 	private ImagePlus overviewImagePlus;
+	private CalibratedRai< T > processedTemplate;
 
 	public TemplateMatcherTranslation2D( CalibratedRai< T > overviewCalibratedRai )
 	{
@@ -48,17 +48,21 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 		CalibratedRai< T > projected = project( subSampled );
 
-		CalibratedRai< T > downscaled = scale( projected, getScalingsXY( projected ) );
+		processedTemplate = scale( projected, getScalingsXY( projected ) );
 
-		showIntermediateResult( downscaled, "processed template" );
+		showIntermediateResult( processedTemplate, "processed template" );
 
-		final double[] calibratedPosition = findPositionWithinOverviewImage( downscaled.rai() );
+		final double[] calibratedPosition = findPositionWithinOverviewImage( processedTemplate.rai() );
 
 		final MatchedTemplate matched = getMatchedTemplate( template, calibratedPosition );
 
 		return matched;
 	}
 
+	public CalibratedRai< T > getProcessedTemplate()
+	{
+		return processedTemplate;
+	}
 
 	private void setOverviewImagePlus( CalibratedRai< T > calibratedRai, int addNoiseLevel )
 	{

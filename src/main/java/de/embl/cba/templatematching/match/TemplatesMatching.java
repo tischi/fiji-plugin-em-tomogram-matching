@@ -31,7 +31,8 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private CalibratedRai< T > subsampledOverviewForMatching;
 	private String highMagId;
 	private String lowMagId;
-	private CalibratedRaiPlus< T > overview;
+	private CalibratedRaiPlus< T > rawOverview;
+	private CalibratedRai rotatedOverviewForExport;
 
 	public TemplatesMatching( TemplatesMatchingSettings settings )
 	{
@@ -49,9 +50,10 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		openOverview();
 
-		matchTemplates( subsampledOverviewForMatching );
+		if ( settings.saveResultsAsBdv)
+			exportOverview( rotatedOverviewForExport, rawOverview.is3D, rawOverview.isMultiChannel );
 
-		exportOverview( overview );
+		matchTemplates( subsampledOverviewForMatching );
 
 		return true;
 	}
@@ -110,6 +112,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( highMagId ) )
 				continue; // as this will be later matched in the hierarchy
 
+			Utils.log( "Opening: " + templateFile );
 			final CalibratedRaiPlus< T > template = openImage( templateFile );
 
 			final MatchedTemplate matchedTemplate = templateToOverviewMatcher.match( template );
@@ -120,27 +123,29 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 				showBestMatchOnOverview( matchedTemplate,
 						templateToOverviewMatcher.getOverviewImagePlus() );
 
-			exportTemplate( matchedTemplate );
+			if ( settings.saveResultsAsBdv )
+				exportTemplate( matchedTemplate );
 
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( lowMagId ) )
 			{
-				final File highMagFile =
+				final File highResFile =
 						new File( templateFile.getAbsolutePath().replace( lowMagId, highMagId ) );
 
-				final CalibratedRaiPlus< T > highMagTemplate = openImage( highMagFile );
+				Utils.log( "Opening: " + highResFile );
+				final CalibratedRaiPlus< T > highResTemplate = openImage( highResFile );
 
 				final TemplateMatcherTranslation2D highResToLowResMatcher
-						= new TemplateMatcherTranslation2D( matchedTemplate.calibratedRai );
+						= new TemplateMatcherTranslation2D( templateToOverviewMatcher.getProcessedTemplate() );
 
 				final MatchedTemplate matchedHighResTemplate
-						= highResToLowResMatcher.match( highMagTemplate );
+						= highResToLowResMatcher.match( highResTemplate );
 
-				matchedHighResTemplate.file = highMagFile;
+				matchedHighResTemplate.file = highResFile;
 
 				// Show match on lower resolution template
-//				if ( settings.showIntermediateResults )
-//					showBestMatchOnOverview( matchedHighResTemplate,
-//							highResToLowResMatcher.getOverviewImagePlus() );
+				if ( settings.showIntermediateResults )
+					showBestMatchOnOverview( matchedHighResTemplate,
+							highResToLowResMatcher.getOverviewImagePlus() );
 
 				for ( int d = 0; d < 2; d++ )
 					matchedHighResTemplate.matchedPositionNanometer[ d ] += matchedTemplate.matchedPositionNanometer[ d ];
@@ -149,7 +154,8 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 					showBestMatchOnOverview( matchedHighResTemplate,
 							templateToOverviewMatcher.getOverviewImagePlus() );
 
-				exportTemplate( matchedHighResTemplate );
+				if( settings.saveResultsAsBdv )
+					exportTemplate( matchedHighResTemplate );
 
 			}
 		}
@@ -157,19 +163,18 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 	private void openOverview()
 	{
-		overview = loadOverview();
+		rawOverview = loadOverview();
 
-		CalibratedRai rotated =
-				Processor.rotate2D( overview, settings.overviewAngleDegrees );
+		rotatedOverviewForExport = Processor.rotate2D( rawOverview, settings.overviewAngleDegrees );
 
-		rotated = new DefaultCalibratedRai<>(
-				Views.zeroMin( rotated.rai() ), rotated.nanometerCalibration() );
+		rotatedOverviewForExport = new DefaultCalibratedRai<>(
+				Views.zeroMin( rotatedOverviewForExport.rai() ), rotatedOverviewForExport.nanometerCalibration() );
 
-		final long[] overviewSubSampling = getOverviewSubSamplingXY( overview, settings.matchingPixelSpacingNanometer );
+		final long[] overviewSubSampling = getOverviewSubSamplingXY( rawOverview, settings.matchingPixelSpacingNanometer );
 
 		Utils.log( "Sub-sampling overview image by a factor of " + overviewSubSampling[ 0 ] );
 
-		subsampledOverviewForMatching = Processor.subSample( rotated, overviewSubSampling );
+		subsampledOverviewForMatching = Processor.subSample( rotatedOverviewForExport, overviewSubSampling );
 	}
 
 
@@ -213,7 +218,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private boolean saveImagesAsBdvHdf5()
 	{
 		Utils.log( "# Saving results" );
-		exportOverview( overview );
+		exportOverview( rawOverview, rawOverview.is3D, rawOverview.isMultiChannel );
 		exportTemplates();
 		return true;
 	}
@@ -257,7 +262,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 		return settings.outputDirectory + File.separator + name;
 	}
 
-	private void exportOverview( CalibratedRaiPlus< T > overview )
+	private void exportOverview( CalibratedRai< T > overview, boolean is3D, boolean isMultiChannel )
 	{
 		Utils.log( "Exporting overview..." );
 
@@ -272,10 +277,10 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		RandomAccessibleInterval< T > overviewRai = overview.rai();
 
-		if ( ! overview.is3D ) // add z-dimension
+		if ( !is3D ) // add z-dimension
 			overviewRai = Views.addDimension( overviewRai, 0, 0 );
 
-		if ( overview.isMultiChannel ) // swap z and channel dimension
+		if ( isMultiChannel ) // swap z and channel dimension
 			overviewRai = Views.permute( overviewRai, 2, 3 );
 		else
 			overviewRai = Views.addDimension( overviewRai, 0, 0 );
