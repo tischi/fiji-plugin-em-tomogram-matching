@@ -72,22 +72,21 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 				addSourcesDisplaySettingsUI( panel,
 						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
 
-				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
-				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ]  * 2 );
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 2 );
 			}
 			else if ( name.contains( "hm" ) )
 			{
 				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
 				highMagTomogramSourceIndices.add( sourceIndex );
-				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
-				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ]  );
+
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0 );
 			}
 			else if ( name.contains( "lm" ) )
 			{
 				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
 				lowMagTomogramSourceIndices.add( sourceIndex );
-				final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
-				converterSetups.get( sourceIndex ).setDisplayRange( minMax[ 0 ], minMax[ 1 ] * 2  );
+
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 2 );
 			}
 
 		}
@@ -99,6 +98,17 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 				"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
 
 
+	}
+
+	private void autoContrast( List< ConverterSetup > converterSetups,
+							   int sourceIndex,
+							   int numMipmapLevels,
+							   double dimingFactor )
+	{
+		final double[] minMax = getMinMax( sourceIndex, numMipmapLevels - 1 );
+		converterSetups.get( sourceIndex ).setDisplayRange(
+				minMax[ 0 ],
+				minMax[ 1 ] + ( minMax[ 1 ] - minMax[ 0 ] ) * dimingFactor );
 	}
 
 	private Color getOverviewColor( String name )

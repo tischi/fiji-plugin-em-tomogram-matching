@@ -2,6 +2,8 @@ package de.embl.cba.templatematching.browse;
 
 import bdv.spimdata.XmlIoSpimDataMinimal;
 import bdv.util.*;
+import bdv.viewer.SourceAndConverter;
+import de.embl.cba.bdv.utils.BdvUtils;
 import de.embl.cba.templatematching.bdv.BehaviourTransformEventHandler3DWithoutRotation;
 import de.embl.cba.templatematching.bdv.ImageSource;
 import mpicbg.spim.data.SpimData;
@@ -13,6 +15,7 @@ import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
 import java.io.File;
@@ -27,8 +30,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	private ArrayList< File > inputFiles = new ArrayList<>();
 	private Bdv bdv;
 	private ArrayList< ImageSource > imageSources;
-	private double displayRangeFactorMin = 0.9;
-	private double displayRangeFactorMax = 1 + ( 1 - displayRangeFactorMin );
+	private double contrastFactor = 0.1;
 
 	public MatchedTemplatesBrowser( TemplatesBrowsingSettings settings )
 	{
@@ -40,11 +42,10 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	{
 		fetchImageSources( settings.inputDirectory.getAbsolutePath(), inputFiles );
 		showImageSources();
-		centerZatZero();
 		showUI();
 	}
 
-	public void centerZatZero()
+	public void moveBdvViewToAxialZeroPosition()
 	{
 		final AffineTransform3D viewerTransform = new AffineTransform3D();
 		bdv.getBdvHandle().getViewerPanel()
@@ -64,9 +65,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	private void showImageSources()
 	{
 		for ( File file : inputFiles )
-		{
 			addToBdv( file );
-		}
 	}
 
 	private void addToBdv( File file )
@@ -81,16 +80,20 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 						.addTo( bdv )
 						.preferredSize( 800, 800 )
 						.transformEventHandlerFactory(
-								new BehaviourTransformEventHandler3DWithoutRotation.BehaviourTransformEventHandler3DFactory() )
+								new BehaviourTransformEventHandler3DWithoutRotation
+										.BehaviourTransformEventHandler3DFactory() )
 				).get( 0 );
 
-		setDisplayRange( bdvStackSource );
+
+//		new Thread( () -> setAutoContrastDisplayRange( bdvStackSource ) ).start();
 
 		setColor( file, bdvStackSource );
 
 		bdv = bdvStackSource.getBdvHandle();
 
 		imageSources.add( new ImageSource( file, bdvStackSource, spimData ) );
+
+		moveBdvViewToAxialZeroPosition();
 
 		//Utils.updateBdv( bdv,1000 );
 	}
@@ -115,31 +118,47 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 		}
 	}
 
-	private void setDisplayRange( BdvStackSource< ? > bdvStackSource )
+	private void setAutoContrastDisplayRange( BdvStackSource< ? > bdvStackSource )
 	{
-		final int numMipmapLevels =
-				bdvStackSource.getSources().get( 0 ).getSpimSource().getNumMipmapLevels();
+		final List< ? extends SourceAndConverter< ? > > sources = bdvStackSource.getSources();
 
-		final RandomAccessibleInterval< T > lowResSource =
-				(RandomAccessibleInterval) bdvStackSource.getSources().get( 0 ).getSpimSource().getSource( 0, numMipmapLevels - 1  );
-
-		final Cursor< T > cursor = Views.iterable( lowResSource ).cursor();
-
-		double min = Double.MAX_VALUE;
-		double max = - Double.MAX_VALUE;
-		double value;
-
-		while ( cursor.hasNext() )
+		for ( SourceAndConverter< ? > sourceAndConverter : sources )
 		{
-			value = cursor.next().getRealDouble();
-			if ( value < min ) min = value;
-			if ( value > max ) max = value;
+			final int numMipmapLevels =
+					sourceAndConverter.getSpimSource().getNumMipmapLevels();
+
+			final RandomAccessibleInterval< T > rai =
+					( RandomAccessibleInterval ) sourceAndConverter
+							.getSpimSource().getSource( 0, numMipmapLevels - 1 );
+
+			final long stackCenter =
+					( rai.max( 2 ) - rai.min( 2 ) ) / 2 + rai.min( 2 );
+
+			final IntervalView< T > slice = Views.hyperSlice( rai, 2, stackCenter );
+
+			final Cursor< T > cursor = Views.iterable( slice ).cursor();
+
+			double min = Double.MAX_VALUE;
+			double max = -Double.MAX_VALUE;
+			double value;
+
+			while ( cursor.hasNext() )
+			{
+				value = cursor.next().getRealDouble();
+				if ( value < min ) min = value;
+				if ( value > max ) max = value;
+			}
+
+			min = min - ( max - min ) * contrastFactor;
+			max = max + ( max - min ) * contrastFactor;
+
+			final int sourceIndex = BdvUtils.
+					getSourceIndex( bdv, sourceAndConverter.getSpimSource() );
+
+			bdv.getBdvHandle().getSetupAssignments().
+					getConverterSetups().get( sourceIndex ).setDisplayRange( min, max  );
 		}
 
-		min *= displayRangeFactorMin;
-		max *= displayRangeFactorMax;
-
-		bdvStackSource.setDisplayRange( min, max );
 	}
 
 	private SpimData openSpimData( File file )
