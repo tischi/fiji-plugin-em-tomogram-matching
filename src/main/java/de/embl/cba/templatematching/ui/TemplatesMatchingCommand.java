@@ -2,7 +2,7 @@ package de.embl.cba.templatematching.ui;
 
 import de.embl.cba.templatematching.browse.MatchedTemplatesBrowser;
 import de.embl.cba.templatematching.browse.TemplatesBrowsingSettings;
-import de.embl.cba.templatematching.match.TemplatesMatching;
+import de.embl.cba.templatematching.match.TemplatesMatcher;
 import de.embl.cba.templatematching.match.TemplatesMatchingSettings;
 import ij.IJ;
 import net.imglib2.type.NativeType;
@@ -53,7 +53,7 @@ public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > 
 	{
 		setSettings();
 
-		final TemplatesMatching matching = new TemplatesMatching( settings );
+		final TemplatesMatcher matching = new TemplatesMatcher( settings );
 
 		if ( matching.run() )
 		{

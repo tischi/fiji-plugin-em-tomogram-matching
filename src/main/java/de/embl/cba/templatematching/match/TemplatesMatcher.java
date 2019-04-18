@@ -19,9 +19,8 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
-import static de.embl.cba.templatematching.Utils.showIntermediateResult;
 
-public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
+public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 {
 
 	private final TemplatesMatchingSettings settings;
@@ -34,7 +33,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 	private CalibratedRaiPlus< T > rawOverview;
 	private CalibratedRai rotatedOverviewForExport;
 
-	public TemplatesMatching( TemplatesMatchingSettings settings )
+	public TemplatesMatcher( TemplatesMatchingSettings settings )
 	{
 		this.settings = settings;
 		templateIndex = 0;
@@ -112,7 +111,6 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( highMagId ) )
 				continue; // as this will be later matched in the hierarchy
 
-			Utils.log( "Opening: " + templateFile );
 			final CalibratedRaiPlus< T > template = openImage( templateFile );
 
 			final MatchedTemplate matchedTemplate = templateToOverviewMatcher.match( template );
@@ -131,7 +129,6 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 				final File highResFile =
 						new File( templateFile.getAbsolutePath().replace( lowMagId, highMagId ) );
 
-				Utils.log( "Opening: " + highResFile );
 				final CalibratedRaiPlus< T > highResTemplate = openImage( highResFile );
 
 				final TemplateMatcherTranslation2D highResToLowResMatcher
@@ -163,7 +160,7 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 	private void openOverview()
 	{
-		rawOverview = loadOverview();
+		rawOverview = openImage( settings.overviewImageFile );
 
 		rotatedOverviewForExport = Processor.rotate2D( rawOverview, settings.overviewAngleDegrees );
 
@@ -172,7 +169,9 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 		final long[] overviewSubSampling = getOverviewSubSamplingXY( rawOverview, settings.matchingPixelSpacingNanometer );
 
-		Utils.log( "Sub-sampling overview image by a factor of " + overviewSubSampling[ 0 ] );
+
+		Utils.log( "Requested matching pixel size [nm]: " + settings.matchingPixelSpacingNanometer );
+		Utils.log( "Sub-sampling overview image by " + overviewSubSampling[ 0 ] );
 
 		subsampledOverviewForMatching = Processor.subSample( rotatedOverviewForExport, overviewSubSampling );
 	}
@@ -193,14 +192,6 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 			return new long[]{ subSampling[ 0 ], subSampling[ 1 ], 1 };
 		else
 			return null;
-	}
-
-
-	private CalibratedRaiPlus< T > loadOverview()
-	{
-		Utils.log( "Loading overview image: " + settings.overviewImageFile );
-
-		return ImageIO.withBFopenRAI( settings.overviewImageFile );
 	}
 
 	private double confirmImageScalingUI( double value, final String imageName )
@@ -339,7 +330,10 @@ public class TemplatesMatching< T extends RealType< T > & NativeType< T > >
 
 	private CalibratedRaiPlus< T > openImage( File file )
 	{
-		return  (CalibratedRaiPlus) ImageIO.withBFopenRAI( file );
+		Utils.log( "Opening: " + file );
+		final CalibratedRaiPlus calibratedRaiPlus = ImageIO.withBFopenRAI( file );
+		Utils.log( "Pixel size [nm]: " + rawOverview.nanometerCalibration()[ 0 ] );
+		return  calibratedRaiPlus;
 	}
 
 

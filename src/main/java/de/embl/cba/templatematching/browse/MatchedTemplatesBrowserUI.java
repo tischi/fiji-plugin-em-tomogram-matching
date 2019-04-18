@@ -40,7 +40,7 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	public void showUI()
 	{
 		addSourceZoomPanel( this );
-		zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
+		// zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 		addDisplaySettingsUI( this );
 		addCaptureViewPanel( this );
 		createAndShowUI();

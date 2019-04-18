@@ -137,8 +137,6 @@ public class Utils
 	FloatProcessor asFloatProcessor( RandomAccessibleInterval< T > rai,
 									 final int addNoiseLevel )
 	{
-		Utils.log( "Converting RandomAccessibleInterval to FloatProcessor..." );
-
 		RandomAccessibleInterval< T > rai2D = rai;
 		if ( rai.numDimensions() == 3 )
 			rai2D = Views.hyperSlice( rai, 2, 0 );
@@ -168,8 +166,6 @@ public class Utils
 	public static  < T extends RealType< T > & NativeType< T > >
 	ByteProcessor asByteProcessor( RandomAccessibleInterval< T > rai )
 	{
-		Utils.log( "Converting Image to ByteProcessor..." );
-
 		RandomAccessibleInterval< T > rai2D = rai;
 
 		if ( rai.numDimensions() == 3 )
