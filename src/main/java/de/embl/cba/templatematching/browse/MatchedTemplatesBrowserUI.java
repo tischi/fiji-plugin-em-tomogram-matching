@@ -72,14 +72,14 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 				addSourcesDisplaySettingsUI( panel,
 						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
 
-				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 2 );
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0.5 );
 			}
 			else if ( name.contains( "hm" ) )
 			{
 				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
 				highMagTomogramSourceIndices.add( sourceIndex );
 
-				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0 );
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0.5 );
 			}
 			else if ( name.contains( "lm" ) )
 			{
@@ -87,6 +87,13 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 				lowMagTomogramSourceIndices.add( sourceIndex );
 
 				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 2 );
+			}
+			else
+			{
+				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
+				lowMagTomogramSourceIndices.add( sourceIndex );
+
+				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0 );
 			}
 
 		}

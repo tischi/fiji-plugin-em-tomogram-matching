@@ -134,8 +134,7 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 
 	private double[] findPositionWithinOverviewImage( RandomAccessibleInterval< T > template )
 	{
-		Utils.log( "X-correlation..." );
-
+		Utils.log( "Computing x-correlation..." );
 		FloatProcessor correlation = TemplateMatchingPlugin.doMatch(
 				overviewImagePlus.getProcessor(),
 				asFloatProcessor( template ),
@@ -144,10 +143,10 @@ public class TemplateMatcherTranslation2D< T extends RealType< T > & NativeType<
 		if ( showIntermediateResults )
 			new ImagePlus( "correlation", correlation ).show();
 
-		Utils.log( "Find maximum in x-correlation..." );
+		Utils.log( "Finding maximum in x-correlation..." );
 		final int[] position = findMaximumPosition( correlation );
 
-		Utils.log( "Refine maximum to sub-pixel resolution..." );
+		Utils.log( "Refining maximum to sub-pixel resolution..." );
 		final double[] refinedPosition = computeRefinedPosition( correlation, position );
 
 		final double[] calibratedPosition = getCalibratedPosition3D( refinedPosition );

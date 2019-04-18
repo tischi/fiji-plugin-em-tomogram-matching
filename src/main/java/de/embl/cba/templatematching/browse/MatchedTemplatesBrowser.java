@@ -66,6 +66,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 	{
 		for ( File file : inputFiles )
 			addToBdv( file );
+		moveBdvViewToAxialZeroPosition();
 	}
 
 	private void addToBdv( File file )
@@ -92,8 +93,6 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 		bdv = bdvStackSource.getBdvHandle();
 
 		imageSources.add( new ImageSource( file, bdvStackSource, spimData ) );
-
-		moveBdvViewToAxialZeroPosition();
 
 		//Utils.updateBdv( bdv,1000 );
 	}
