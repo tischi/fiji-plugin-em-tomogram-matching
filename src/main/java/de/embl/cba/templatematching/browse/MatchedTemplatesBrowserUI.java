@@ -90,19 +90,22 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 			}
 			else
 			{
+				// default to highMag (hm)
 				matchedTemplateVoxelDimensions.add( BdvUtils.getVoxelDimensions( bdv, sourceIndex ) );
-				lowMagTomogramSourceIndices.add( sourceIndex );
+				highMagTomogramSourceIndices.add( sourceIndex );
 
 				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0 );
 			}
 
 		}
 
-		addSourcesDisplaySettingsUI( panel,
-				"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY );
+		if ( lowMagTomogramSourceIndices.size() >0 )
+			addSourcesDisplaySettingsUI( panel,
+						"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY );
 
-		addSourcesDisplaySettingsUI( panel,
-				"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
+		if ( highMagTomogramSourceIndices.size() > 0)
+			addSourcesDisplaySettingsUI( panel,
+					"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
 
 
 	}
