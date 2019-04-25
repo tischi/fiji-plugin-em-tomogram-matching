@@ -332,7 +332,7 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 	{
 		Utils.log( "Opening: " + file );
 		final CalibratedRaiPlus calibratedRaiPlus = ImageIO.withBFopenRAI( file );
-		Utils.log( "Pixel size [nm]: " + rawOverview.nanometerCalibration()[ 0 ] );
+		Utils.log( "Pixel size [nm]: " + calibratedRaiPlus.nanometerCalibration()[ 0 ] );
 		return  calibratedRaiPlus;
 	}
 

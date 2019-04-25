@@ -20,7 +20,6 @@ public class CalibratedRaiPlus< T extends RealType< T > & NativeType< T > >
 	{
 		super();
 
-
 		rai = ImageJFunctions.wrapReal( imp );
 
 		final String unit = imp.getCalibration().getUnit();
