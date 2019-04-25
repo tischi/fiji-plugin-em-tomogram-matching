@@ -537,6 +537,11 @@ public class Utils
 			{
 				voxelSize = value / 10D;
 			}
+			else
+			{
+				Utils.error( "Could not interpret physical pixel calibration! Unit was: " + unit );
+				return value;
+			}
 		}
 
 		return voxelSize;

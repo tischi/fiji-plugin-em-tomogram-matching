@@ -1,6 +1,7 @@
 package de.embl.cba.templatematching.image;
 
 import de.embl.cba.templatematching.Utils;
+import ij.IJ;
 import ij.ImagePlus;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.display.imagej.ImageJFunctions;

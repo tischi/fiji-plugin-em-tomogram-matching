@@ -152,12 +152,6 @@ public class ImageIO
 
 			double voxelSize = Utils.asNanometers( value, unit );
 
-			if ( voxelSize == -1 )
-			{
-				Utils.error( "Could not interpret nanometerCalibration unit of " + file.getName() +
-						"; unit found was: " + unit );
-			}
-
 			Utils.log("Voxel size [nm]: " + voxelSize );
 			return voxelSize;
 
