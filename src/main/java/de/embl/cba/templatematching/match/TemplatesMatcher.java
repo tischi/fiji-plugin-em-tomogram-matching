@@ -167,18 +167,28 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 		rotatedOverviewForExport = new DefaultCalibratedRai<>(
 				Views.zeroMin( rotatedOverviewForExport.rai() ), rotatedOverviewForExport.nanometerCalibration() );
 
-		final long[] overviewSubSampling = getOverviewSubSamplingXY( rawOverview, settings.matchingPixelSpacingNanometer );
+		if ( settings.matchingPixelSpacingNanometer != 0 )
+		{
+			final long[] overviewSubSampling = getOverviewSubSamplingXY( rawOverview, settings.matchingPixelSpacingNanometer );
 
+			Utils.log( "Requested matching pixel size [nm]: " + settings.matchingPixelSpacingNanometer );
+			Utils.log( "Sub-sampling overview image by " + overviewSubSampling[ 0 ] );
 
-		Utils.log( "Requested matching pixel size [nm]: " + settings.matchingPixelSpacingNanometer );
-		Utils.log( "Sub-sampling overview image by " + overviewSubSampling[ 0 ] );
+			subsampledOverviewForMatching = Processor.subSample( rotatedOverviewForExport, overviewSubSampling );
+		}
+		else
+		{
+			Utils.log( "Pixel size during matching (= pixel size overview image) [nm]: "
+					+ rotatedOverviewForExport.nanometerCalibration()[ 0 ] );
 
-		subsampledOverviewForMatching = Processor.subSample( rotatedOverviewForExport, overviewSubSampling );
+			subsampledOverviewForMatching = rotatedOverviewForExport;
+		}
 	}
 
 
 	private long[] getOverviewSubSamplingXY( CalibratedRai< T > overview, double matchingPixelSpacingNanometer )
 	{
+
 		final long[] subSampling = new long[ 2 ];
 
 		for ( int d = 0; d < 2; d++ )

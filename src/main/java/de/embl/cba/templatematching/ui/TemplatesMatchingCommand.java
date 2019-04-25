@@ -33,7 +33,7 @@ public class TemplatesMatchingCommand<T extends RealType<T> & NativeType< T > > 
 	@Parameter ( label = "Output Directory", style = "directory" )
 	public File outputDirectory = settings.outputDirectory;
 
-	@Parameter ( label = "Pixel Spacing during Matching [nm]" )
+	@Parameter ( label = "Pixel Spacing during Matching (Put 0 for Overview Image Pixel Spacing) [nm]" )
 	public double pixelSpacingDuringMatching =
 			settings.matchingPixelSpacingNanometer;
 
