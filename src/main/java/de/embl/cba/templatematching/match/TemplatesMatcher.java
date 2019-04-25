@@ -37,8 +37,8 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 	{
 		this.settings = settings;
 		templateIndex = 0;
-		highMagId = "_hm.";
-		lowMagId = "_lm.";
+		highMagId = "_hm.rec";
+		lowMagId = "_lm.rec";
 
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
@@ -126,8 +126,7 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 
 			if ( settings.isHierarchicalMatching && templateFile.getName().contains( lowMagId ) )
 			{
-				final File highResFile =
-						new File( templateFile.getAbsolutePath().replace( lowMagId, highMagId ) );
+				File highResFile = getHighResFile( templateFile );
 
 				final CalibratedRaiPlus< T > highResTemplate = openImage( highResFile );
 
@@ -156,6 +155,17 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 
 			}
 		}
+	}
+
+	private File getHighResFile( File lowResFile )
+	{
+		final String highResFileName = lowResFile.getName().replace( lowMagId, highMagId );
+
+		for ( File file : templateFiles )
+			if ( file.getName().equals( highResFileName ) )
+				return file;
+
+		return null;
 	}
 
 	private void openOverview()
