@@ -70,7 +70,8 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 				final ArrayList< Integer > indices = new ArrayList<>();
 				indices.add( sourceIndex );
 				addSourcesDisplaySettingsUI( panel,
-						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color );
+						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color,
+						0.0, 65535.0 );
 
 				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0.5 );
 			}
@@ -101,16 +102,19 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 		if ( lowMagTomogramSourceIndices.size() >0 )
 			addSourcesDisplaySettingsUI( panel,
-						"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY );
+						"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY,
+					0.0, 65535.0 );
 
 		if ( highMagTomogramSourceIndices.size() > 0)
 		{
 			if ( lowMagTomogramSourceIndices.size() == 0 )
 				addSourcesDisplaySettingsUI( panel,
-						"Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
+						"Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
+						0.0, 65535.0 );
 			else
 				addSourcesDisplaySettingsUI( panel,
-						"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY );
+						"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
+						0.0, 65535.0 );
 		}
 
 	}

@@ -239,6 +239,8 @@ public class TemplateMatchingPlugin implements PlugIn {
 	public static FloatProcessor doMatch(
 			ImageProcessor src, ImageProcessor tpl, int method ) {
 
+
+
 		BufferedImage bi = null, bi2 = null;
 		FloatProcessor resultFp = null;
 		int srcW = src.getWidth();

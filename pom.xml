@@ -72,7 +72,7 @@
 		<package-name>de.embl.cba.templatematching</package-name>
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>EMBL</license.copyrightOwners>
-		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>
+<!--		<imagej.app.directory>/Applications/Fiji.app/</imagej.app.directory>-->
 	</properties>
 
 
@@ -148,7 +148,7 @@
 		<dependency>
 			<groupId>de.embl.cba</groupId>
 			<artifactId>bdv-utils</artifactId>
-			<version>0.2.11</version>
+			<version>0.2.14</version>
 		</dependency>
 
 		<dependency>
