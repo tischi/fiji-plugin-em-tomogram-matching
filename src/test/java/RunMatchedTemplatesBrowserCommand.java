@@ -1,4 +1,4 @@
-import de.embl.cba.templatematching.ui.TemplatesBrowserCommand;
+import de.embl.cba.templatematching.command.TemplatesBrowserCommand;
 import net.imagej.ImageJ;
 
 public class RunMatchedTemplatesBrowserCommand

@@ -28,7 +28,7 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 			new ARGBType( ARGBType.rgba( 125, 125, 125, 255 ) );
 	private final TemplatesBrowsingSettings settings;
 	private ArrayList< File > inputFiles = new ArrayList<>();
-	private Bdv bdv;
+	private BdvHandle bdv;
 	private ArrayList< ImageSource > imageSources;
 	private double contrastFactor = 0.1;
 

@@ -1,25 +1,30 @@
 package de.embl.cba.templatematching.browse;
 
 import bdv.tools.brightness.ConverterSetup;
-import bdv.util.*;
+import bdv.util.Bdv;
+import bdv.util.BdvHandle;
 import bdv.viewer.state.SourceState;
-import de.embl.cba.bdv.utils.*;
+import de.embl.cba.bdv.utils.BdvDialogs;
+import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.templatematching.UiUtils;
 import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.Cursor;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
-import de.embl.cba.templatematching.UiUtils;
 import net.imglib2.view.SubsampleIntervalView;
 import net.imglib2.view.Views;
+import org.scijava.ui.behaviour.ClickBehaviour;
+import org.scijava.ui.behaviour.io.InputTriggerConfig;
+import org.scijava.ui.behaviour.util.Behaviours;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.embl.cba.bdv.utils.BdvUserInterfaceUtils.addSourcesDisplaySettingsUI;
+import static de.embl.cba.bdv.utils.BdvDialogs.addSourcesDisplaySettingsUI;
 import static de.embl.cba.bdv.utils.BdvUtils.zoomToSource;
 import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
@@ -28,10 +33,10 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 {
 	JFrame frame;
 	JComboBox tomogramComboBox;
-	private final Bdv bdv;
+	private final BdvHandle bdv;
 	private ArrayList< VoxelDimensions > matchedTemplateVoxelDimensions;
 
-	public MatchedTemplatesBrowserUI( Bdv bdv )
+	public MatchedTemplatesBrowserUI( BdvHandle bdv )
 	{
 		this.bdv = bdv;
 		matchedTemplateVoxelDimensions = new ArrayList<>(  );
@@ -44,6 +49,18 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		addDisplaySettingsUI( this );
 		addCaptureViewPanel( this );
 		createAndShowUI();
+		installDisplaySettingsBehaviour();
+	}
+
+	public void installDisplaySettingsBehaviour()
+	{
+		Behaviours behaviours = new Behaviours( new InputTriggerConfig() );
+		behaviours.install( bdv.getTriggerbindings(), "" );
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
+		{
+			BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(
+					bdv, false );
+		}, "display settings dialog", "D" ) ;
 	}
 
 	private void addDisplaySettingsUI( JPanel panel )
@@ -60,18 +77,19 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		for ( int sourceIndex = 0; sourceIndex < sources.size(); ++sourceIndex )
 		{
 			final String name = sources.get( sourceIndex ).getSpimSource().getName();
-			final int numMipmapLevels = sources.get( sourceIndex ).getSpimSource().getNumMipmapLevels();
+			final int numMipmapLevels = sources.get( sourceIndex )
+					.getSpimSource().getNumMipmapLevels();
 
 			if ( name.contains( "overview" ) )
 			{
 				Color color = getOverviewColor( name );
 				converterSetups.get( sourceIndex ).setColor( Utils.asArgbType( color ) );
 
-				final ArrayList< Integer > indices = new ArrayList<>();
-				indices.add( sourceIndex );
-				addSourcesDisplaySettingsUI( panel,
-						BdvUtils.getName( bdv, sourceIndex ), bdv, indices, color,
-						0.0, 65535.0 );
+//				final ArrayList< Integer > indices = new ArrayList<>();
+//				indices.add( sourceIndex );
+//				addSourcesDisplaySettingsUI( panel,
+//						BdvUtils.getSourceName( bdv, sourceIndex ), bdv, indices, color,
+//						0.0, 65535.0 );
 
 				autoContrast( converterSetups, sourceIndex, numMipmapLevels, 0.5 );
 			}
@@ -100,22 +118,22 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 		}
 
-		if ( lowMagTomogramSourceIndices.size() >0 )
-			addSourcesDisplaySettingsUI( panel,
-						"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY,
-					0.0, 65535.0 );
-
-		if ( highMagTomogramSourceIndices.size() > 0)
-		{
-			if ( lowMagTomogramSourceIndices.size() == 0 )
-				addSourcesDisplaySettingsUI( panel,
-						"Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
-						0.0, 65535.0 );
-			else
-				addSourcesDisplaySettingsUI( panel,
-						"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
-						0.0, 65535.0 );
-		}
+//		if ( lowMagTomogramSourceIndices.size() >0 )
+//			addSourcesDisplaySettingsUI( panel,
+//						"Low Mag Tomograms", bdv, lowMagTomogramSourceIndices, Color.GRAY,
+//					0.0, 65535.0 );
+//
+//		if ( highMagTomogramSourceIndices.size() > 0)
+//		{
+//			if ( lowMagTomogramSourceIndices.size() == 0 )
+//				addSourcesDisplaySettingsUI( panel,
+//						"Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
+//						0.0, 65535.0 );
+//			else
+//				addSourcesDisplaySettingsUI( panel,
+//						"High Mag Tomograms", bdv, highMagTomogramSourceIndices, Color.GRAY,
+//						0.0, 65535.0 );
+//		}
 
 	}
 

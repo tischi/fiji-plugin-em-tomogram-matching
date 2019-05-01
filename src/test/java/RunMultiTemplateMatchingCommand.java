@@ -1,4 +1,4 @@
-import de.embl.cba.templatematching.ui.TemplatesMatchingCommand;
+import de.embl.cba.templatematching.command.TemplatesMatchingCommand;
 import net.imagej.ImageJ;
 
 public class RunMultiTemplateMatchingCommand

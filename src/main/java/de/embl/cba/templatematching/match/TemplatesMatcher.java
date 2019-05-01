@@ -37,8 +37,8 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 	{
 		this.settings = settings;
 		templateIndex = 0;
-		highMagId = "_hm.rec";
-		lowMagId = "_lm.rec";
+		highMagId = "_hm.";
+		lowMagId = "_lm.";
 
 		Utils.showIntermediateResults = settings.showIntermediateResults;
 	}
@@ -108,7 +108,8 @@ public class TemplatesMatcher< T extends RealType< T > & NativeType< T > >
 
 		for ( File templateFile : templateFiles )
 		{
-			if ( settings.isHierarchicalMatching && templateFile.getName().contains( highMagId ) )
+			if ( settings.isHierarchicalMatching
+					&& templateFile.getName().contains( highMagId ) )
 				continue; // as this will be later matched in the hierarchy
 
 			final CalibratedRaiPlus< T > template = openImage( templateFile );

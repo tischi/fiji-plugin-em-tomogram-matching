@@ -15,7 +15,9 @@ public class FileUtils
 		return files;
 	}
 
-	private static void populateFileList( File directory, String fileNameRegExp, List< File > files)
+	private static void populateFileList( File directory,
+										  String fileNameRegExp,
+										  List< File > files)
 	{
 		File[] fList = directory.listFiles();
 
