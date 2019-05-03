@@ -1,11 +1,13 @@
 package de.embl.cba.templatematching.browse;
 
+import bdv.tools.HelpDialog;
 import bdv.tools.brightness.ConverterSetup;
-import bdv.util.Bdv;
 import bdv.util.BdvHandle;
 import bdv.viewer.state.SourceState;
 import de.embl.cba.bdv.utils.BdvDialogs;
 import de.embl.cba.bdv.utils.BdvUtils;
+import de.embl.cba.bdv.utils.capture.BdvViewCaptures;
+import de.embl.cba.bdv.utils.capture.PixelSpacingDialog;
 import de.embl.cba.templatematching.UiUtils;
 import de.embl.cba.templatematching.Utils;
 import mpicbg.spim.data.sequence.VoxelDimensions;
@@ -21,12 +23,13 @@ import org.scijava.ui.behaviour.util.Behaviours;
 
 import javax.swing.*;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.embl.cba.bdv.utils.BdvDialogs.addSourcesDisplaySettingsUI;
 import static de.embl.cba.bdv.utils.BdvUtils.zoomToSource;
-import static de.embl.cba.bdv.utils.BdvViewCaptures.captureView;
 import static de.embl.cba.transforms.utils.Transforms.getCenter;
 
 public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T > > extends JPanel
@@ -35,10 +38,15 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	JComboBox tomogramComboBox;
 	private final BdvHandle bdv;
 	private ArrayList< VoxelDimensions > matchedTemplateVoxelDimensions;
+	private Behaviours behaviours;
+	private HelpDialog helpDialog;
+	private String pixelUnit;
+	private PixelSpacingDialog pixelSpacingDialog;
 
 	public MatchedTemplatesBrowserUI( BdvHandle bdv )
 	{
 		this.bdv = bdv;
+		pixelUnit = "nanometer";
 		matchedTemplateVoxelDimensions = new ArrayList<>(  );
 	}
 
@@ -47,20 +55,50 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 		addSourceZoomPanel( this );
 		// zoomToSource( bdv, ( String ) tomogramComboBox.getSelectedItem() );
 		addDisplaySettingsUI( this );
-		addCaptureViewPanel( this );
+		addHelpPanel( this );
+		//addCaptureViewPanel( this );
 		createAndShowUI();
+		installBdvBehaviours();
+	}
+
+	public void initHelpDialog()
+	{
+		final URL helpFile = Utils.class.getResource( "/Help.html" );
+		helpDialog = new HelpDialog( frame, helpFile );
+	}
+
+
+	public void installBdvBehaviours()
+	{
+		behaviours = new Behaviours( new InputTriggerConfig() );
+		behaviours.install( bdv.getTriggerbindings(), "" );
+
 		installDisplaySettingsBehaviour();
+		installViewCaptureBehaviour();
 	}
 
 	public void installDisplaySettingsBehaviour()
 	{
-		Behaviours behaviours = new Behaviours( new InputTriggerConfig() );
-		behaviours.install( bdv.getTriggerbindings(), "" );
+
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
 		{
 			BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(
 					bdv, false );
-		}, "display settings dialog", "D" ) ;
+		}, "show display settings dialog", "D" ) ;
+	}
+
+	public void installViewCaptureBehaviour()
+	{
+		pixelSpacingDialog = new PixelSpacingDialog( 10, pixelUnit );
+
+		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
+		{
+			new Thread( () -> {
+				if ( !pixelSpacingDialog.showDialog() ) return;
+				BdvViewCaptures.captureView(
+						bdv, pixelSpacingDialog.getPixelSpacing(), "nanometer" );
+			}).start();
+		}, "capture view", "C" ) ;
 	}
 
 	private void addDisplaySettingsUI( JPanel panel )
@@ -203,24 +241,24 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	}
 
 
-	private void addCaptureViewPanel( JPanel panel )
-	{
-		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
-
-		horizontalLayoutPanel.add( new JLabel( "Resolution [nm]" ) );
-
-		final JTextField resolutionTextField = new JTextField( "" + getMinVoxelSize() );
-
-		horizontalLayoutPanel.add( resolutionTextField );
-
-		final JButton button = new JButton( "Capture current view" );
-
-		button.addActionListener( e -> captureView( bdv, Double.parseDouble( resolutionTextField.getText() ) ) );
-
-		horizontalLayoutPanel.add( button );
-
-		panel.add( horizontalLayoutPanel );
-	}
+//	private void addCaptureViewPanel( JPanel panel )
+//	{
+//		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
+//
+//		horizontalLayoutPanel.add( new JLabel( "Voxel Spacing [nm]" ) );
+//
+//		final JTextField resolutionTextField = new JTextField( "" + getMinVoxelSize() );
+//
+//		horizontalLayoutPanel.add( resolutionTextField );
+//
+//		final JButton button = new JButton( "Capture View" );
+//
+//		button.addActionListener( e -> captureView( bdv, Double.parseDouble( resolutionTextField.getText() ) ) );
+//
+//		horizontalLayoutPanel.add( button );
+//
+//		panel.add( horizontalLayoutPanel );
+//	}
 
 	private double getMinVoxelSize()
 	{
@@ -230,8 +268,36 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 			if ( voxelDimensions.dimension( 0 ) < minVoxelSize )
 				minVoxelSize = voxelDimensions.dimension( 0 );
 		}
-		return minVoxelSize;
+
+		return round( minVoxelSize, 5 );
 	}
+
+	public static double round(double value, int places) {
+		if (places < 0) throw new IllegalArgumentException();
+
+		BigDecimal bd = new BigDecimal(value);
+		bd = bd.setScale(places, RoundingMode.HALF_UP);
+		return bd.doubleValue();
+	}
+
+
+	private void addHelpPanel( JPanel panel )
+	{
+		initHelpDialog();
+
+		final JPanel horizontalLayoutPanel = UiUtils.getHorizontalLayoutPanel();
+
+		final JButton button = new JButton( " Help " );
+
+		horizontalLayoutPanel.add( button );
+
+		button.addActionListener( e -> {
+			helpDialog.setVisible( ! helpDialog.isVisible() );
+		} );
+
+		panel.add( horizontalLayoutPanel );
+	}
+
 
 	private void addSourceZoomPanel( JPanel panel )
 	{
