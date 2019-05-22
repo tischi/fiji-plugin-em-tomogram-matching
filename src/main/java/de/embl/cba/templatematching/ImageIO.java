@@ -15,6 +15,7 @@ import loci.plugins.in.ImagePlusReader;
 import loci.plugins.in.ImportProcess;
 import loci.plugins.in.ImporterOptions;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.img.VirtualStackAdapter;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
@@ -103,6 +104,7 @@ public class ImageIO
 		if ( file.getName().contains( ".tif" ) )
 		{
 			Utils.log( "Reading voxel size from " + file.getName() );
+
 			final ImagePlus imagePlus = IJ.openVirtual( file.getAbsolutePath() );
 
 			double voxelSize = Utils.asNanometers(

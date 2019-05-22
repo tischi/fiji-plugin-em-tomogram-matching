@@ -183,7 +183,6 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 		File[] fList = directory.listFiles();
 		if ( fList != null )
 			for ( File file : fList )
-			{
 				if ( file.isFile() )
 				{
 					if ( isValid( file ) )
@@ -191,8 +190,6 @@ public class MatchedTemplatesBrowser< T extends RealType< T > & NativeType< T > 
 					else if ( file.isDirectory() )
 						fetchImageSources( file.getAbsolutePath(), files );
 				}
-
-			}
 	}
 
 	private boolean isValid( File file )
