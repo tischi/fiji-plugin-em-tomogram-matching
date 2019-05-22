@@ -11,7 +11,7 @@ import org.scijava.plugin.Plugin;
 import java.io.File;
 
 @Plugin(type = Command.class, menuPath = "Plugins>Registration>Matched Template Browsing" )
-public class TemplatesBrowserCommand<T extends RealType<T> & NativeType< T > > implements Command
+public class TemplatesBrowserCommand implements Command
 {
 	TemplatesBrowsingSettings settings = new TemplatesBrowsingSettings();
 

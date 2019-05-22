@@ -395,7 +395,11 @@ public class Utils
 		return wellDimensions;
 	}
 
-	public static long[] computeMinCoordinates( int[] imageDimensions, int[] wellPosition, int[] sitePosition, int[] siteDimensions )
+	public static long[] computeMinCoordinates(
+			int[] imageDimensions,
+			int[] wellPosition,
+			int[] sitePosition,
+			int[] siteDimensions )
 	{
 		final long[] min = new long[ 2 ];
 
@@ -408,15 +412,14 @@ public class Utils
 		return min;
 	}
 
-	public static FinalInterval createInterval( int[] wellPosition, int[] sitePosition, int[] siteDimensions, int[] imageDimensions )
+	public static FinalInterval createInterval(
+			int[] wellPosition, int[] sitePosition, int[] siteDimensions, int[] imageDimensions )
 	{
 		final long[] min = computeMinCoordinates( imageDimensions, wellPosition, sitePosition, siteDimensions );
 		final long[] max = new long[ min.length ];
 
 		for ( int d = 0; d < min.length; ++d )
-		{
 			max[ d ] = min[ d ] + imageDimensions[ d ] - 1;
-		}
 
 		return new FinalInterval( min, max );
 	}
@@ -426,12 +429,8 @@ public class Utils
 		FinalInterval intersect = Intervals.intersect( requestedInterval, imageInterval );
 
 		for ( int d = 0; d < intersect.numDimensions(); ++d )
-		{
 			if ( intersect.dimension( d ) <= 0 )
-			{
 				return false;
-			}
-		}
 
 		return true;
 	}

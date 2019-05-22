@@ -9,9 +9,11 @@ import java.io.File;
 
 public class BrowseMatchedTemplatesCLEM01
 {
-
 	public static void main(final String... args)
 	{
+		final ImageJ ij = new ImageJ();
+		ij.ui().showUI();
+
 		TemplatesBrowsingSettings browsingSettings = new TemplatesBrowsingSettings();
 
 		browsingSettings.inputDirectory = new File(
@@ -19,5 +21,4 @@ public class BrowseMatchedTemplatesCLEM01
 
 		new MatchedTemplatesBrowser( browsingSettings ).run();
 	}
-
 }

@@ -41,7 +41,6 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	private Behaviours behaviours;
 	private HelpDialog helpDialog;
 	private String pixelUnit;
-	private PixelSpacingDialog pixelSpacingDialog;
 
 	public MatchedTemplatesBrowserUI( BdvHandle bdv )
 	{
@@ -81,22 +80,27 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 	{
 
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
-		{
-			BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(
-					bdv, false );
-		}, "show display settings dialog", "D" ) ;
+				BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(
+						bdv,
+						false,
+						true ),
+				"show display settings dialog",
+				"D" ) ;
 	}
 
 	public void installViewCaptureBehaviour()
 	{
-		pixelSpacingDialog = new PixelSpacingDialog( 10, pixelUnit );
-
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
 		{
 			new Thread( () -> {
-				if ( !pixelSpacingDialog.showDialog() ) return;
+				final PixelSpacingDialog dialog = new PixelSpacingDialog( BdvUtils.getViewerVoxelSpacing( bdv )[ 0 ], pixelUnit );
+				if ( ! dialog.showDialog() ) return;
+				Utils.log( "Loading data to capture current view..." );
 				BdvViewCaptures.captureView(
-						bdv, pixelSpacingDialog.getPixelSpacing(), "nanometer" );
+						bdv,
+						dialog.getPixelSpacing(),
+						"nanometer",
+						true );
 			}).start();
 		}, "capture view", "C" ) ;
 	}
@@ -329,9 +333,7 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 			final String name = source.getSpimSource().getName();
 
 			if ( ! name.contains( Utils.OVERVIEW_NAME ) )
-			{
 				tomogramComboBox.addItem( name );
-			}
 		}
 
 		tomogramComboBox.updateUI();
