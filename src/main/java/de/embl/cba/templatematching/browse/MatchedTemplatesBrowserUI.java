@@ -78,7 +78,6 @@ public class MatchedTemplatesBrowserUI< T extends NativeType< T > & RealType< T 
 
 	public void installDisplaySettingsBehaviour()
 	{
-
 		behaviours.behaviour( ( ClickBehaviour ) ( x, y ) ->
 				BdvDialogs.showDisplaySettingsDialogForSourcesAtMousePosition(
 						bdv,

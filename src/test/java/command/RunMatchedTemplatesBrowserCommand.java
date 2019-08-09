@@ -1,3 +1,5 @@
+package command;
+
 import de.embl.cba.templatematching.command.TemplatesBrowserCommand;
 import net.imagej.ImageJ;
 
