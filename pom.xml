@@ -131,7 +131,7 @@
 		<dependency>
 			<groupId>org.bytedeco</groupId>
 			<artifactId>javacv</artifactId>
-			<version>0.10</version>
+			<version>1.5.14</version>
 		</dependency>
 
 		<dependency>
